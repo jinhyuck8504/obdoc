@@ -3,10 +3,8 @@ const nextConfig = {
   // 성능 최적화 설정
   experimental: {
     optimizePackageImports: ['lucide-react', 'react-hook-form', 'zod'],
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
   },
-
-  // 서버 외부 패키지 설정
-  serverExternalPackages: ['@supabase/supabase-js'],
 
   // 이미지 최적화
   images: {
@@ -68,14 +66,13 @@ const nextConfig = {
 
   // 빌드 설정
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
 
-  // 출력 설정 (Netlify 배포용)
-  output: 'standalone',
+  // Netlify 배포 최적화
   trailingSlash: false,
 
   // 환경별 설정

@@ -8,9 +8,10 @@ import LoadingSpinner from '@/components/common/LoadingSpinner'
 interface AuthGuardProps {
   children: React.ReactNode
   redirectTo?: string
+  requiredRole?: string
 }
 
-export default function AuthGuard({ children, redirectTo = '/login' }: AuthGuardProps) {
+export default function AuthGuard({ children, redirectTo = '/login', requiredRole }: AuthGuardProps) {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [isChecking, setIsChecking] = useState(true)
