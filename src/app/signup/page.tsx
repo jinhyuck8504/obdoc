@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { ArrowLeft, LogIn, Heart, Users, BarChart3 } from 'lucide-react'
 import Logo from '@/components/common/Logo'
 import SignupForm from '@/components/auth/SignupForm'
@@ -90,7 +91,9 @@ export default function SignupPage() {
 
               {/* Signup Form Card */}
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
-                <SignupForm />
+                <Suspense fallback={<div className="text-center py-4">로딩 중...</div>}>
+                  <SignupForm />
+                </Suspense>
                 
                 {/* Additional Actions */}
                 <div className="mt-6 space-y-4">

@@ -107,10 +107,11 @@ npm run type-check
 ✅ **적용된 수정사항**:
 - Webpack 별칭 설정 추가
 - Admin 페이지들의 상대 경로 import 적용
-- 빌드 설정 최적화
+- TypeScript 관련 패키지를 dependencies로 이동
+- Netlify 빌드 설정 최적화 (npm ci --include=dev)
 
 ⏳ **대기 중**:
-- Netlify 자동 배포 진행 중
+- Netlify 자동 배포 진행 중 (TypeScript 오류 해결 후)
 - 빌드 성공 여부 확인 대기
 
 ## 다음 단계

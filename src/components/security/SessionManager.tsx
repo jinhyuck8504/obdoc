@@ -67,7 +67,7 @@ export default function SessionManager() {
     if (timeRemaining <= 1 * 60 * 1000 && timeRemaining > 0) {
       handleAutoLogout()
     }
-  }, [user, showWarning])
+  }, [user, showWarningFeedback])
 
   // 세션 연장
   const extendSession = useCallback(async () => {

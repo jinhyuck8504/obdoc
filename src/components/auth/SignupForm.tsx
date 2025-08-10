@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -47,9 +47,22 @@ const signupSchema = z.object({
 
 type SignupFormData = z.infer<typeof signupSchema>
 
-export default function SignupForm() {
-  const router = useRouter()
+// useSearchParams를 사용하는 별도 컴포넌트
+function SearchParamsHandler({ onPlanChange }: { onPlanChange: (plan: string) => void }) {
   const searchParams = useSearchParams()
+  
+  useEffect(() => {
+    const planParam = searchParams.get('plan')
+    if (planParam && ['1month', '6months', '12months'].includes(planParam)) {
+      onPlanChange(planParam)
+    }
+  }, [searchParams, onPlanChange])
+  
+  return null
+}
+
+function SignupFormContent() {
+  const router = useRouter()
   const [signupError, setSignupError] = useState<string | null>(null)
   const [signupSuccess, setSignupSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -71,12 +84,9 @@ export default function SignupForm() {
   const selectedRole = watch('role')
 
   // URL 파라미터에서 플랜 정보 읽기
-  useEffect(() => {
-    const planParam = searchParams.get('plan')
-    if (planParam && ['1month', '6months', '12months'].includes(planParam)) {
-      setValue('subscriptionPlan', planParam as '1month' | '6months' | '12months')
-    }
-  }, [searchParams, setValue])
+  const handlePlanChange = (plan: string) => {
+    setValue('subscriptionPlan', plan as '1month' | '6months' | '12months')
+  }
 
   const onSubmit = async (data: SignupFormData) => {
     try {
@@ -584,6 +594,19 @@ export default function SignupForm() {
           )}
         </Button>
       </form>
+
+      {/* URL 파라미터 처리 */}
+      <Suspense fallback={null}>
+        <SearchParamsHandler onPlanChange={handlePlanChange} />
+      </Suspense>
     </div>
+  )
+}
+
+export default function SignupForm() {
+  return (
+    <Suspense fallback={<div className="text-center py-4">로딩 중...</div>}>
+      <SignupFormContent />
+    </Suspense>
   )
 }
