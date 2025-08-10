@@ -79,6 +79,15 @@ const nextConfig = {
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
+
+  // Webpack 설정 (경로 별칭 명시적 설정)
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname, 'src'),
+    }
+    return config
+  },
 }
 
 module.exports = nextConfig

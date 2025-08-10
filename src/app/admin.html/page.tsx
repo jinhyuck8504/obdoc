@@ -1,6 +1,6 @@
 'use client'
 
-import AuthGuard from '@/components/auth/AuthGuard'
+import AuthGuard from '../../components/auth/AuthGuard'
 import { Users, Hospital, CreditCard, BarChart3, Settings, Shield } from 'lucide-react'
 
 export default function AdminPage() {
