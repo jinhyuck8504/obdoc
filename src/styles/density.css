@@ -1,0 +1,332 @@
+/* UI Density Optimization Styles */
+
+:root {
+  /* Default comfortable density */
+  --density-spacing-xs: 0.5rem;
+  --density-spacing-sm: 0.75rem;
+  --density-spacing-md: 1rem;
+  --density-spacing-lg: 1.5rem;
+  --density-spacing-xl: 2rem;
+  
+  --density-padding-xs: 0.5rem;
+  --density-padding-sm: 0.75rem;
+  --density-padding-md: 1rem;
+  --density-padding-lg: 1.5rem;
+  --density-padding-xl: 2rem;
+  
+  --density-font-xs: 0.75rem;
+  --density-font-sm: 0.875rem;
+  --density-font-base: 1rem;
+  --density-font-lg: 1.125rem;
+  --density-font-xl: 1.25rem;
+  
+  --density-leading-tight: 1.375;
+  --density-leading-normal: 1.5;
+  --density-leading-relaxed: 1.625;
+  
+  --density-radius-sm: 0.375rem;
+  --density-radius-md: 0.5rem;
+  --density-radius-lg: 0.75rem;
+}
+
+/* Base density classes */
+.density-compact {
+  --local-spacing: var(--density-spacing-xs);
+  --local-padding: var(--density-padding-xs);
+  --local-font-size: var(--density-font-sm);
+  --local-line-height: var(--density-leading-tight);
+}
+
+.density-comfortable {
+  --local-spacing: var(--density-spacing-sm);
+  --local-padding: var(--density-padding-sm);
+  --local-font-size: var(--density-font-base);
+  --local-line-height: var(--density-leading-normal);
+}
+
+.density-spacious {
+  --local-spacing: var(--density-spacing-md);
+  --local-padding: var(--density-padding-md);
+  --local-font-size: var(--density-font-lg);
+  --local-line-height: var(--density-leading-relaxed);
+}
+
+/* Button density styles */
+.button-compact {
+  padding: var(--density-padding-xs) var(--density-padding-sm);
+  font-size: var(--density-font-sm);
+  line-height: var(--density-leading-tight);
+  border-radius: var(--density-radius-sm);
+  min-height: 2rem;
+}
+
+.button-comfortable {
+  padding: var(--density-padding-sm) var(--density-padding-md);
+  font-size: var(--density-font-base);
+  line-height: var(--density-leading-normal);
+  border-radius: var(--density-radius-md);
+  min-height: 2.5rem;
+}
+
+.button-spacious {
+  padding: var(--density-padding-md) var(--density-padding-lg);
+  font-size: var(--density-font-lg);
+  line-height: var(--density-leading-relaxed);
+  border-radius: var(--density-radius-lg);
+  min-height: 3rem;
+}
+
+/* Input density styles */
+.input-compact {
+  padding: var(--density-padding-xs) var(--density-padding-sm);
+  font-size: var(--density-font-sm);
+  line-height: var(--density-leading-tight);
+  border-radius: var(--density-radius-sm);
+  min-height: 2rem;
+}
+
+.input-comfortable {
+  padding: var(--density-padding-sm) var(--density-padding-md);
+  font-size: var(--density-font-base);
+  line-height: var(--density-leading-normal);
+  border-radius: var(--density-radius-md);
+  min-height: 2.5rem;
+}
+
+.input-spacious {
+  padding: var(--density-padding-md) var(--density-padding-lg);
+  font-size: var(--density-font-lg);
+  line-height: var(--density-leading-relaxed);
+  border-radius: var(--density-radius-lg);
+  min-height: 3rem;
+}
+
+/* Card density styles */
+.card-compact {
+  padding: var(--density-padding-sm);
+  border-radius: var(--density-radius-sm);
+  gap: var(--density-spacing-xs);
+}
+
+.card-comfortable {
+  padding: var(--density-padding-md);
+  border-radius: var(--density-radius-md);
+  gap: var(--density-spacing-sm);
+}
+
+.card-spacious {
+  padding: var(--density-padding-lg);
+  border-radius: var(--density-radius-lg);
+  gap: var(--density-spacing-md);
+}
+
+/* List item density styles */
+.list-item-compact {
+  padding: var(--density-padding-xs) var(--density-padding-sm);
+  gap: var(--density-spacing-xs);
+  min-height: 2.5rem;
+}
+
+.list-item-comfortable {
+  padding: var(--density-padding-sm) var(--density-padding-md);
+  gap: var(--density-spacing-sm);
+  min-height: 3rem;
+}
+
+.list-item-spacious {
+  padding: var(--density-padding-md) var(--density-padding-lg);
+  gap: var(--density-spacing-md);
+  min-height: 4rem;
+}
+
+/* Table density styles */
+.table-compact td,
+.table-compact th {
+  padding: var(--density-padding-xs) var(--density-padding-sm);
+  font-size: var(--density-font-sm);
+  line-height: var(--density-leading-tight);
+}
+
+.table-comfortable td,
+.table-comfortable th {
+  padding: var(--density-padding-sm) var(--density-padding-md);
+  font-size: var(--density-font-base);
+  line-height: var(--density-leading-normal);
+}
+
+.table-spacious td,
+.table-spacious th {
+  padding: var(--density-padding-md) var(--density-padding-lg);
+  font-size: var(--density-font-lg);
+  line-height: var(--density-leading-relaxed);
+}
+
+/* Modal density styles */
+.modal-compact {
+  padding: var(--density-padding-md);
+  gap: var(--density-spacing-sm);
+}
+
+.modal-comfortable {
+  padding: var(--density-padding-lg);
+  gap: var(--density-spacing-md);
+}
+
+.modal-spacious {
+  padding: var(--density-padding-xl);
+  gap: var(--density-spacing-lg);
+}
+
+/* Navigation density styles */
+.nav-compact {
+  padding: var(--density-padding-xs);
+  gap: var(--density-spacing-xs);
+}
+
+.nav-compact .nav-item {
+  padding: var(--density-padding-xs) var(--density-padding-sm);
+  font-size: var(--density-font-sm);
+  min-height: 2rem;
+}
+
+.nav-comfortable {
+  padding: var(--density-padding-sm);
+  gap: var(--density-spacing-sm);
+}
+
+.nav-comfortable .nav-item {
+  padding: var(--density-padding-sm) var(--density-padding-md);
+  font-size: var(--density-font-base);
+  min-height: 2.5rem;
+}
+
+.nav-spacious {
+  padding: var(--density-padding-md);
+  gap: var(--density-spacing-md);
+}
+
+.nav-spacious .nav-item {
+  padding: var(--density-padding-md) var(--density-padding-lg);
+  font-size: var(--density-font-lg);
+  min-height: 3rem;
+}
+
+/* Widget density styles */
+.widget-compact {
+  padding: var(--density-padding-sm);
+  gap: var(--density-spacing-xs);
+}
+
+.widget-compact .widget-header {
+  margin-bottom: var(--density-spacing-xs);
+  font-size: var(--density-font-base);
+}
+
+.widget-compact .widget-content {
+  gap: var(--density-spacing-xs);
+}
+
+.widget-comfortable {
+  padding: var(--density-padding-md);
+  gap: var(--density-spacing-sm);
+}
+
+.widget-comfortable .widget-header {
+  margin-bottom: var(--density-spacing-sm);
+  font-size: var(--density-font-lg);
+}
+
+.widget-comfortable .widget-content {
+  gap: var(--density-spacing-sm);
+}
+
+.widget-spacious {
+  padding: var(--density-padding-lg);
+  gap: var(--density-spacing-md);
+}
+
+.widget-spacious .widget-header {
+  margin-bottom: var(--density-spacing-md);
+  font-size: var(--density-font-xl);
+}
+
+.widget-spacious .widget-content {
+  gap: var(--density-spacing-md);
+}
+
+/* Form density styles */
+.form-compact {
+  gap: var(--density-spacing-sm);
+}
+
+.form-compact .form-group {
+  gap: var(--density-spacing-xs);
+}
+
+.form-compact .form-label {
+  font-size: var(--density-font-sm);
+  margin-bottom: var(--density-spacing-xs);
+}
+
+.form-comfortable {
+  gap: var(--density-spacing-md);
+}
+
+.form-comfortable .form-group {
+  gap: var(--density-spacing-sm);
+}
+
+.form-comfortable .form-label {
+  font-size: var(--density-font-base);
+  margin-bottom: var(--density-spacing-sm);
+}
+
+.form-spacious {
+  gap: var(--density-spacing-lg);
+}
+
+.form-spacious .form-group {
+  gap: var(--density-spacing-md);
+}
+
+.form-spacious .form-label {
+  font-size: var(--density-font-lg);
+  margin-bottom: var(--density-spacing-md);
+}
+
+/* Utility classes for spacing */
+.density-gap-xs { gap: var(--density-spacing-xs); }
+.density-gap-sm { gap: var(--density-spacing-sm); }
+.density-gap-md { gap: var(--density-spacing-md); }
+.density-gap-lg { gap: var(--density-spacing-lg); }
+.density-gap-xl { gap: var(--density-spacing-xl); }
+
+.density-p-xs { padding: var(--density-padding-xs); }
+.density-p-sm { padding: var(--density-padding-sm); }
+.density-p-md { padding: var(--density-padding-md); }
+.density-p-lg { padding: var(--density-padding-lg); }
+.density-p-xl { padding: var(--density-padding-xl); }
+
+.density-m-xs { margin: var(--density-spacing-xs); }
+.density-m-sm { margin: var(--density-spacing-sm); }
+.density-m-md { margin: var(--density-spacing-md); }
+.density-m-lg { margin: var(--density-spacing-lg); }
+.density-m-xl { margin: var(--density-spacing-xl); }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .density-compact {
+    --local-spacing: calc(var(--density-spacing-xs) * 0.8);
+    --local-padding: calc(var(--density-padding-xs) * 0.8);
+  }
+  
+  .density-comfortable {
+    --local-spacing: calc(var(--density-spacing-sm) * 0.9);
+    --local-padding: calc(var(--density-padding-sm) * 0.9);
+  }
+  
+  .density-spacious {
+    --local-spacing: var(--density-spacing-sm);
+    --local-padding: var(--density-padding-sm);
+  }
+}
