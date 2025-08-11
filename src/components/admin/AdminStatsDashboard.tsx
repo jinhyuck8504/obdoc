@@ -18,6 +18,7 @@ import StatCard from './widgets/StatCard'
 import RevenueChart from './widgets/RevenueChart'
 import HospitalTypeChart from './widgets/HospitalTypeChart'
 import UserActivityChart from './widgets/UserActivityChart'
+import ChartErrorBoundary from '../common/ChartErrorBoundary'
 
 export default function AdminStatsDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -185,14 +186,20 @@ export default function AdminStatsDashboard() {
       {/* 상세 통계 차트 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 수익 차트 */}
-        <RevenueChart data={revenueData} loading={loading} />
+        <ChartErrorBoundary>
+          <RevenueChart data={revenueData} loading={loading} />
+        </ChartErrorBoundary>
         
         {/* 병원 유형별 차트 */}
-        <HospitalTypeChart data={hospitalTypeData} loading={loading} />
+        <ChartErrorBoundary>
+          <HospitalTypeChart data={hospitalTypeData} loading={loading} />
+        </ChartErrorBoundary>
       </div>
 
       {/* 사용자 활동 차트 */}
-      <UserActivityChart data={userActivityData} loading={loading} />
+      <ChartErrorBoundary>
+        <UserActivityChart data={userActivityData} loading={loading} />
+      </ChartErrorBoundary>
 
       {/* 추가 통계 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

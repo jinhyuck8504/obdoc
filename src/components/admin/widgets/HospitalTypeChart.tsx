@@ -5,12 +5,13 @@ import { Building2, Users, DollarSign } from 'lucide-react'
 import {
   Chart as ChartJS,
   ArcElement,
+  DoughnutController,
   Tooltip,
   Legend,
 } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
 
-ChartJS.register(ArcElement, Tooltip, Legend)
+ChartJS.register(ArcElement, DoughnutController, Tooltip, Legend)
 
 interface HospitalTypeChartProps {
   data: HospitalTypeStats[]

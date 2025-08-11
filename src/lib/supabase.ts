@@ -4,36 +4,88 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// 싱글톤 인스턴스 저장소 (글로벌 레벨)
+// 강화된 싱글톤 인스턴스 저장소
 declare global {
   var __supabase: any
   var __supabaseAdmin: any
+  var __supabaseInstanceCount: number
+  var __supabaseAdminInstanceCount: number
 }
 
-// 글로벌 변수로 싱글톤 보장
-const getGlobalSupabase = () => {
-  if (typeof globalThis !== 'undefined') {
-    return globalThis.__supabase
+// 인스턴스 카운터 초기화
+if (typeof globalThis !== 'undefined') {
+  globalThis.__supabaseInstanceCount = globalThis.__supabaseInstanceCount || 0
+  globalThis.__supabaseAdminInstanceCount = globalThis.__supabaseAdminInstanceCount || 0
+}
+
+// 강화된 싱글톤 관리 클래스
+class SupabaseSingleton {
+  private static instance: any = null
+  private static adminInstance: any = null
+  private static instanceId: string | null = null
+  private static adminInstanceId: string | null = null
+
+  static getInstance() {
+    // 글로벌 인스턴스 확인
+    if (typeof globalThis !== 'undefined' && globalThis.__supabase) {
+      if (!this.instance) {
+        this.instance = globalThis.__supabase
+      }
+      return this.instance
+    }
+    return null
   }
-  return null
-}
 
-const setGlobalSupabase = (instance: any) => {
-  if (typeof globalThis !== 'undefined') {
-    globalThis.__supabase = instance
+  static setInstance(instance: any) {
+    if (typeof globalThis !== 'undefined') {
+      // 기존 인스턴스가 있다면 경고
+      if (globalThis.__supabase && globalThis.__supabase !== instance) {
+        console.warn('⚠️ Supabase 클라이언트 인스턴스가 교체됩니다. 이는 예상치 못한 동작을 일으킬 수 있습니다.')
+      }
+      
+      globalThis.__supabase = instance
+      globalThis.__supabaseInstanceCount = (globalThis.__supabaseInstanceCount || 0) + 1
+      
+      // 인스턴스 ID 생성
+      this.instanceId = `supabase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      console.log(`✅ Supabase 클라이언트 인스턴스 생성 (ID: ${this.instanceId}, Count: ${globalThis.__supabaseInstanceCount})`)
+    }
+    this.instance = instance
   }
-}
 
-const getGlobalSupabaseAdmin = () => {
-  if (typeof globalThis !== 'undefined') {
-    return globalThis.__supabaseAdmin
+  static getAdminInstance() {
+    if (typeof globalThis !== 'undefined' && globalThis.__supabaseAdmin) {
+      if (!this.adminInstance) {
+        this.adminInstance = globalThis.__supabaseAdmin
+      }
+      return this.adminInstance
+    }
+    return null
   }
-  return null
-}
 
-const setGlobalSupabaseAdmin = (instance: any) => {
-  if (typeof globalThis !== 'undefined') {
-    globalThis.__supabaseAdmin = instance
+  static setAdminInstance(instance: any) {
+    if (typeof globalThis !== 'undefined') {
+      if (globalThis.__supabaseAdmin && globalThis.__supabaseAdmin !== instance) {
+        console.warn('⚠️ Supabase 관리자 클라이언트 인스턴스가 교체됩니다.')
+      }
+      
+      globalThis.__supabaseAdmin = instance
+      globalThis.__supabaseAdminInstanceCount = (globalThis.__supabaseAdminInstanceCount || 0) + 1
+      
+      this.adminInstanceId = `supabase-admin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      console.log(`✅ Supabase 관리자 클라이언트 인스턴스 생성 (ID: ${this.adminInstanceId}, Count: ${globalThis.__supabaseAdminInstanceCount})`)
+    }
+    this.adminInstance = instance
+  }
+
+  static getInstanceCount() {
+    return typeof globalThis !== 'undefined' ? globalThis.__supabaseInstanceCount || 0 : 0
+  }
+
+  static getAdminInstanceCount() {
+    return typeof globalThis !== 'undefined' ? globalThis.__supabaseAdminInstanceCount || 0 : 0
   }
 }
 
@@ -114,10 +166,10 @@ const createDummySupabaseClient = () => {
   }
 }
 
-// 클라이언트 생성 함수 (강화된 싱글톤 패턴)
+// 강화된 싱글톤 패턴으로 클라이언트 생성
 const getSupabaseClient = () => {
-  // 글로벌 인스턴스 확인
-  const existingInstance = getGlobalSupabase()
+  // 기존 인스턴스 확인
+  const existingInstance = SupabaseSingleton.getInstance()
   if (existingInstance) {
     return existingInstance
   }
@@ -144,29 +196,34 @@ const getSupabaseClient = () => {
       console.warn('⚠️ 개발 모드로 실행: Supabase 환경 변수가 설정되지 않았습니다.')
       newInstance = createDummySupabaseClient()
     } else {
-      console.log('✅ 실제 Supabase 클라이언트 초기화 (싱글톤)')
+      // 중복 인스턴스 생성 방지 체크
+      const currentCount = SupabaseSingleton.getInstanceCount()
+      if (currentCount > 0) {
+        console.warn(`⚠️ Supabase 클라이언트가 이미 ${currentCount}번 생성되었습니다. 싱글톤 패턴을 확인하세요.`)
+      }
+      
+      console.log('✅ 실제 Supabase 클라이언트 초기화 (강화된 싱글톤)')
       newInstance = createClient(supabaseUrl!, supabaseAnonKey!, {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: true,
-          storageKey: 'obdoc-auth-token-v7', // 버전 업데이트로 기존 세션 클리어
+          storageKey: 'obdoc-auth-token-v8', // 버전 업데이트로 기존 세션 클리어
           storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-          // 이메일 확인 없이 즉시 로그인 허용
           flowType: 'pkce'
         }
       })
     }
   }
 
-  // 글로벌 인스턴스로 저장
-  setGlobalSupabase(newInstance)
+  // 강화된 싱글톤으로 저장
+  SupabaseSingleton.setInstance(newInstance)
   return newInstance
 }
 
 const getSupabaseAdminClient = () => {
-  // 글로벌 관리자 인스턴스 확인
-  const existingAdminInstance = getGlobalSupabaseAdmin()
+  // 기존 관리자 인스턴스 확인
+  const existingAdminInstance = SupabaseSingleton.getAdminInstance()
   if (existingAdminInstance) {
     return existingAdminInstance
   }
@@ -193,21 +250,27 @@ const getSupabaseAdminClient = () => {
     if (!isValidSupabaseConfig(supabaseUrl, supabaseAnonKey)) {
       newAdminInstance = createDummySupabaseClient()
     } else {
+      // 중복 관리자 인스턴스 생성 방지 체크
+      const currentAdminCount = SupabaseSingleton.getAdminInstanceCount()
+      if (currentAdminCount > 0) {
+        console.warn(`⚠️ Supabase 관리자 클라이언트가 이미 ${currentAdminCount}번 생성되었습니다.`)
+      }
+      
       newAdminInstance = createClient(
         supabaseUrl!,
         process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey!,
         {
           auth: {
             persistSession: false,
-            storageKey: 'obdoc-admin-auth-token-v3'
+            storageKey: 'obdoc-admin-auth-token-v4'
           }
         }
       )
     }
   }
 
-  // 글로벌 관리자 인스턴스로 저장
-  setGlobalSupabaseAdmin(newAdminInstance)
+  // 강화된 싱글톤으로 저장
+  SupabaseSingleton.setAdminInstance(newAdminInstance)
   return newAdminInstance
 }
 
