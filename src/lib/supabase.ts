@@ -1,93 +1,16 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 // 환경 변수 확인
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// 강화된 싱글톤 인스턴스 저장소
-declare global {
-  var __supabase: any
-  var __supabaseAdmin: any
-  var __supabaseInstanceCount: number
-  var __supabaseAdminInstanceCount: number
-}
+// 클라이언트 전용 싱글톤 인스턴스
+let clientInstance: SupabaseClient | null = null
+let adminClientInstance: SupabaseClient | null = null
 
-// 인스턴스 카운터 초기화
-if (typeof globalThis !== 'undefined') {
-  globalThis.__supabaseInstanceCount = globalThis.__supabaseInstanceCount || 0
-  globalThis.__supabaseAdminInstanceCount = globalThis.__supabaseAdminInstanceCount || 0
-}
-
-// 강화된 싱글톤 관리 클래스
-class SupabaseSingleton {
-  private static instance: any = null
-  private static adminInstance: any = null
-  private static instanceId: string | null = null
-  private static adminInstanceId: string | null = null
-
-  static getInstance() {
-    // 글로벌 인스턴스 확인
-    if (typeof globalThis !== 'undefined' && globalThis.__supabase) {
-      if (!this.instance) {
-        this.instance = globalThis.__supabase
-      }
-      return this.instance
-    }
-    return null
-  }
-
-  static setInstance(instance: any) {
-    if (typeof globalThis !== 'undefined') {
-      // 기존 인스턴스가 있다면 경고
-      if (globalThis.__supabase && globalThis.__supabase !== instance) {
-        console.warn('⚠️ Supabase 클라이언트 인스턴스가 교체됩니다. 이는 예상치 못한 동작을 일으킬 수 있습니다.')
-      }
-      
-      globalThis.__supabase = instance
-      globalThis.__supabaseInstanceCount = (globalThis.__supabaseInstanceCount || 0) + 1
-      
-      // 인스턴스 ID 생성
-      this.instanceId = `supabase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      
-      console.log(`✅ Supabase 클라이언트 인스턴스 생성 (ID: ${this.instanceId}, Count: ${globalThis.__supabaseInstanceCount})`)
-    }
-    this.instance = instance
-  }
-
-  static getAdminInstance() {
-    if (typeof globalThis !== 'undefined' && globalThis.__supabaseAdmin) {
-      if (!this.adminInstance) {
-        this.adminInstance = globalThis.__supabaseAdmin
-      }
-      return this.adminInstance
-    }
-    return null
-  }
-
-  static setAdminInstance(instance: any) {
-    if (typeof globalThis !== 'undefined') {
-      if (globalThis.__supabaseAdmin && globalThis.__supabaseAdmin !== instance) {
-        console.warn('⚠️ Supabase 관리자 클라이언트 인스턴스가 교체됩니다.')
-      }
-      
-      globalThis.__supabaseAdmin = instance
-      globalThis.__supabaseAdminInstanceCount = (globalThis.__supabaseAdminInstanceCount || 0) + 1
-      
-      this.adminInstanceId = `supabase-admin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      
-      console.log(`✅ Supabase 관리자 클라이언트 인스턴스 생성 (ID: ${this.adminInstanceId}, Count: ${globalThis.__supabaseAdminInstanceCount})`)
-    }
-    this.adminInstance = instance
-  }
-
-  static getInstanceCount() {
-    return typeof globalThis !== 'undefined' ? globalThis.__supabaseInstanceCount || 0 : 0
-  }
-
-  static getAdminInstanceCount() {
-    return typeof globalThis !== 'undefined' ? globalThis.__supabaseAdminInstanceCount || 0 : 0
-  }
-}
+// 인스턴스 생성 플래그
+let isCreatingInstance = false
+let isCreatingAdminInstance = false
 
 // 프로덕션 환경 변수 검증
 const validateProductionEnvironment = () => {
@@ -166,112 +89,134 @@ const createDummySupabaseClient = () => {
   }
 }
 
-// 강화된 싱글톤 패턴으로 클라이언트 생성
-const getSupabaseClient = () => {
-  // 기존 인스턴스 확인
-  const existingInstance = SupabaseSingleton.getInstance()
-  if (existingInstance) {
-    return existingInstance
-  }
-
-  // 프로덕션 환경 변수 검증 (브라우저에서만)
-  validateProductionEnvironment()
-
-  let newInstance: any
-
-  // 서버 사이드에서는 세션 비활성화
+// 완전한 싱글톤 패턴으로 클라이언트 생성
+const getSupabaseClient = (): SupabaseClient => {
+  // 서버 사이드에서는 매번 새 인스턴스 생성 (세션 없음)
   if (typeof window === 'undefined') {
     if (!isValidSupabaseConfig(supabaseUrl, supabaseAnonKey)) {
-      newInstance = createDummySupabaseClient()
-    } else {
-      newInstance = createClient(supabaseUrl!, supabaseAnonKey!, {
-        auth: {
-          persistSession: false
-        }
-      })
+      return createDummySupabaseClient() as SupabaseClient
     }
-  } else {
-    // 브라우저에서 실제 클라이언트 생성
+    
+    return createClient(supabaseUrl!, supabaseAnonKey!, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    })
+  }
+
+  // 클라이언트 사이드에서만 싱글톤 적용
+  if (clientInstance) {
+    return clientInstance
+  }
+
+  // 중복 생성 방지
+  if (isCreatingInstance) {
+    // 생성 중이면 잠시 대기 후 재시도
+    return new Promise<SupabaseClient>((resolve) => {
+      const checkInstance = () => {
+        if (clientInstance) {
+          resolve(clientInstance)
+        } else {
+          setTimeout(checkInstance, 10)
+        }
+      }
+      checkInstance()
+    }) as any
+  }
+
+  isCreatingInstance = true
+
+  try {
+    // 프로덕션 환경 변수 검증
+    validateProductionEnvironment()
+
     if (!isValidSupabaseConfig(supabaseUrl, supabaseAnonKey)) {
       console.warn('⚠️ 개발 모드로 실행: Supabase 환경 변수가 설정되지 않았습니다.')
-      newInstance = createDummySupabaseClient()
+      clientInstance = createDummySupabaseClient() as SupabaseClient
     } else {
-      // 중복 인스턴스 생성 방지 체크
-      const currentCount = SupabaseSingleton.getInstanceCount()
-      if (currentCount > 0) {
-        console.warn(`⚠️ Supabase 클라이언트가 이미 ${currentCount}번 생성되었습니다. 싱글톤 패턴을 확인하세요.`)
-      }
-      
-      console.log('✅ 실제 Supabase 클라이언트 초기화 (강화된 싱글톤)')
-      newInstance = createClient(supabaseUrl!, supabaseAnonKey!, {
+      console.log('✅ 실제 Supabase 클라이언트 초기화 (완전한 싱글톤)')
+      clientInstance = createClient(supabaseUrl!, supabaseAnonKey!, {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: true,
-          storageKey: 'obdoc-auth-token-v8', // 버전 업데이트로 기존 세션 클리어
-          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+          storageKey: 'obdoc-auth-token-v9', // 새 버전으로 기존 세션 클리어
+          storage: window.localStorage,
           flowType: 'pkce'
         }
       })
     }
+  } finally {
+    isCreatingInstance = false
   }
 
-  // 강화된 싱글톤으로 저장
-  SupabaseSingleton.setInstance(newInstance)
-  return newInstance
+  return clientInstance
 }
 
-const getSupabaseAdminClient = () => {
-  // 기존 관리자 인스턴스 확인
-  const existingAdminInstance = SupabaseSingleton.getAdminInstance()
-  if (existingAdminInstance) {
-    return existingAdminInstance
-  }
-
-  let newAdminInstance: any
-
-  // 서버 사이드에서는 세션 비활성화
+const getSupabaseAdminClient = (): SupabaseClient => {
+  // 서버 사이드에서는 매번 새 인스턴스 생성
   if (typeof window === 'undefined') {
     if (!isValidSupabaseConfig(supabaseUrl, supabaseAnonKey)) {
-      newAdminInstance = createDummySupabaseClient()
-    } else {
-      newAdminInstance = createClient(
-        supabaseUrl!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey!,
-        {
-          auth: {
-            persistSession: false
-          }
-        }
-      )
+      return createDummySupabaseClient() as SupabaseClient
     }
-  } else {
-    // 브라우저에서 관리자 클라이언트 생성
-    if (!isValidSupabaseConfig(supabaseUrl, supabaseAnonKey)) {
-      newAdminInstance = createDummySupabaseClient()
-    } else {
-      // 중복 관리자 인스턴스 생성 방지 체크
-      const currentAdminCount = SupabaseSingleton.getAdminInstanceCount()
-      if (currentAdminCount > 0) {
-        console.warn(`⚠️ Supabase 관리자 클라이언트가 이미 ${currentAdminCount}번 생성되었습니다.`)
+    
+    return createClient(
+      supabaseUrl!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey!,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
       }
-      
-      newAdminInstance = createClient(
+    )
+  }
+
+  // 클라이언트 사이드에서만 싱글톤 적용
+  if (adminClientInstance) {
+    return adminClientInstance
+  }
+
+  // 중복 생성 방지
+  if (isCreatingAdminInstance) {
+    return new Promise<SupabaseClient>((resolve) => {
+      const checkInstance = () => {
+        if (adminClientInstance) {
+          resolve(adminClientInstance)
+        } else {
+          setTimeout(checkInstance, 10)
+        }
+      }
+      checkInstance()
+    }) as any
+  }
+
+  isCreatingAdminInstance = true
+
+  try {
+    if (!isValidSupabaseConfig(supabaseUrl, supabaseAnonKey)) {
+      adminClientInstance = createDummySupabaseClient() as SupabaseClient
+    } else {
+      console.log('✅ Supabase 관리자 클라이언트 초기화 (완전한 싱글톤)')
+      adminClientInstance = createClient(
         supabaseUrl!,
         process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey!,
         {
           auth: {
             persistSession: false,
-            storageKey: 'obdoc-admin-auth-token-v4'
+            storageKey: 'obdoc-admin-auth-token-v5'
           }
         }
       )
     }
+  } finally {
+    isCreatingAdminInstance = false
   }
 
-  // 강화된 싱글톤으로 저장
-  SupabaseSingleton.setAdminInstance(newAdminInstance)
-  return newAdminInstance
+  return adminClientInstance
 }
 
 export const supabase = getSupabaseClient()
