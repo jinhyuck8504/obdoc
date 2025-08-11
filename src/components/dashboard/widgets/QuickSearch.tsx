@@ -1,11 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Search, User, Phone, Calendar, MapPin, Star, Clock } from 'lucide-react'
 import { Customer } from '@/types/customer'
 import { customerService } from '@/lib/customerService'
 
 export default function QuickSearch() {
+  const router = useRouter()
   // TODO: density 기능 임시 제거 (빌드 오류 해결 후 재추가)
   // const { density, getDensityClass } = useDensity()
   const [searchTerm, setSearchTerm] = useState('')
@@ -59,7 +61,7 @@ export default function QuickSearch() {
       return updated.slice(0, 5) // 최대 5개까지만 저장
     })
     // 고객 관리 페이지로 이동
-    window.location.href = '/dashboard/doctor/customers'
+    router.push('/dashboard/doctor/customers')
   }
 
   const getStatusColor = (status: string) => {

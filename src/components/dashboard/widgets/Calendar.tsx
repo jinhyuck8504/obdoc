@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Clock, User, MapPin } from 'lucide-react'
+import AsyncButton from '@/components/ui/AsyncButton'
 
 interface Appointment {
   id: number
@@ -15,6 +17,7 @@ interface Appointment {
 }
 
 export default function Calendar() {
+  const router = useRouter()
   // useDensity 임시 제거 (DensityProvider 오류 방지)
   // const { density, getDensityClass } = useDensity()
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -175,18 +178,20 @@ export default function Calendar() {
             <ChevronRight className="w-4 h-4" />
           </button>
 
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              window.location.href = '/dashboard/doctor/appointments'
+          <AsyncButton
+            onClick={async () => {
+              router.push('/dashboard/doctor/appointments')
             }}
-            className="ml-2 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md transition-colors flex items-center"
-            title="예약 관리"
+            className="ml-2 px-2.5 py-1.5 text-xs"
+            variant="primary"
+            size="sm"
+            timeout={5000}
+            preventDoubleClick={true}
+            showErrorInline={false}
           >
             <Plus className="w-3 h-3 mr-1" />
             예약
-          </button>
+          </AsyncButton>
         </div>
       </div>
 
@@ -263,16 +268,19 @@ export default function Calendar() {
             ))}
             {todayAppointments.length > 3 && (
               <div className="text-center">
-                <button
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    window.location.href = '/dashboard/doctor/appointments'
+                <AsyncButton
+                  onClick={async () => {
+                    router.push('/dashboard/doctor/appointments')
                   }}
-                  className="text-xs text-blue-600 hover:text-blue-800"
+                  className="text-xs"
+                  variant="ghost"
+                  size="sm"
+                  timeout={5000}
+                  preventDoubleClick={true}
+                  showErrorInline={false}
                 >
                   +{todayAppointments.length - 3}개 더 보기
-                </button>
+                </AsyncButton>
               </div>
             )}
           </div>

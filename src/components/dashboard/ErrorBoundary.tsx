@@ -48,7 +48,11 @@ export class DashboardErrorBoundary extends Component<Props, State> {
   }
 
   handleGoHome = () => {
-    window.location.href = '/dashboard/doctor'
+    // Next.js의 router를 사용하기 위해 window.location 대신 이벤트 방식 사용
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/dashboard/doctor')
+      window.location.reload()
+    }
   }
 
   render() {
