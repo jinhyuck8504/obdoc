@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Users, Calendar, BarChart3, MessageCircle, Plus, Activity } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import { Card, CardBody } from '@/components/ui/card'
+import { Card, CardBody } from '@/components/ui/Card'
 import { useToast } from '@/hooks/use-toast'
 
 export default function DoctorDashboardPage() {

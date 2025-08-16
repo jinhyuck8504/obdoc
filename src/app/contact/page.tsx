@@ -15,7 +15,7 @@ import {
   Users,
   Shield
 } from 'lucide-react'
-import { Card } from '@/components/ui/card'
+import { Card } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import BackButton from '@/components/common/BackButton'

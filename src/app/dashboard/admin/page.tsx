@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Users, Building, BarChart3, AlertTriangle, CheckCircle, Clock, DollarSign, Activity } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import { Card, CardBody } from '@/components/ui/card'
+import { Card, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import { useToast } from '@/hooks/use-toast'
 

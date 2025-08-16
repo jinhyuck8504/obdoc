@@ -1,4 +1,5 @@
 import React from 'react'
+import { cn } from '@/lib/utils'
 
 interface CardProps {
   children: React.ReactNode
@@ -24,15 +25,16 @@ interface CardFooterProps {
 }
 
 export function Card({ children, className = '', hover = false, medical = false, onClick }: CardProps) {
-  const classes = [
-    medical ? 'medical-card' : 'card',
-    hover ? 'hover-glow' : '',
-    onClick ? 'cursor-pointer' : '',
-    className
-  ].filter(Boolean).join(' ')
+  const baseClasses = 'bg-white rounded-lg border border-gray-200 shadow-sm'
+  const hoverClasses = hover ? 'hover:shadow-md transition-shadow duration-200' : ''
+  const medicalClasses = medical ? 'border-blue-200 bg-blue-50' : ''
+  const clickableClasses = onClick ? 'cursor-pointer' : ''
   
   return (
-    <div className={classes} onClick={onClick}>
+    <div 
+      className={cn(baseClasses, hoverClasses, medicalClasses, clickableClasses, className)} 
+      onClick={onClick}
+    >
       {children}
     </div>
   )
@@ -40,7 +42,7 @@ export function Card({ children, className = '', hover = false, medical = false,
 
 export function CardHeader({ children, className = '' }: CardHeaderProps) {
   return (
-    <div className={`card-header ${className}`}>
+    <div className={cn('p-6 pb-0', className)}>
       {children}
     </div>
   )
@@ -48,7 +50,7 @@ export function CardHeader({ children, className = '' }: CardHeaderProps) {
 
 export function CardBody({ children, className = '' }: CardBodyProps) {
   return (
-    <div className={`card-body ${className}`}>
+    <div className={cn('p-6', className)}>
       {children}
     </div>
   )
@@ -56,7 +58,7 @@ export function CardBody({ children, className = '' }: CardBodyProps) {
 
 export function CardFooter({ children, className = '' }: CardFooterProps) {
   return (
-    <div className={`card-footer ${className}`}>
+    <div className={cn('p-6 pt-0', className)}>
       {children}
     </div>
   )
@@ -64,11 +66,14 @@ export function CardFooter({ children, className = '' }: CardFooterProps) {
 
 // Export aliases for compatibility with shadcn/ui naming conventions
 export const CardTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-  <h3 className={`text-lg font-semibold ${className}`}>{children}</h3>
+  <h3 className={cn('text-lg font-semibold', className)}>{children}</h3>
 )
 
 export const CardDescription = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-  <p className={`text-sm text-gray-600 ${className}`}>{children}</p>
+  <p className={cn('text-sm text-gray-600', className)}>{children}</p>
 )
 
 export const CardContent = CardBody
+
+// Default export for compatibility
+export default Card

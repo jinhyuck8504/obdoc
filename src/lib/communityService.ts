@@ -4,7 +4,11 @@
 import { supabase } from './supabase'
 import { Post, Comment, CreatePostRequest, UpdatePostRequest, CreateCommentRequest, PostFilters, Report } from '@/types/community'
 import { withTimeout } from './timeoutUtils'
-import { sanitizeHtml } from './htmlValidator'
+// HTML 간단 정리 함수
+const sanitizeHtml = (html: string): string => {
+  // 기본적인 HTML 태그 제거
+  return html.replace(/<[^>]*>/g, '').trim()
+}
 
 class CommunityService {
   /**
