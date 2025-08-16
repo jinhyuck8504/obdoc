@@ -98,3 +98,19 @@ dist
 # Temporary folders
 tmp/
 temp/
+
+# Development files
+*Test.tsx
+*Demo.tsx
+*Enhanced.tsx
+*Legacy.tsx
+adminTest.ts
+htmlValidator.ts
+performanceUtils.ts
+
+# Database temporary files
+reset-database.sql
+add-*.sql
+
+# Documentation duplicates
+RLS_SETUP_GUIDE.md
