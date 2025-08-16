@@ -5,6 +5,7 @@ import Layout from "@/components/common/Layout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -31,6 +32,7 @@ export default function RootLayout({
               <Layout>
                 {children}
               </Layout>
+              <Toaster />
             </AuthProvider>
           </LoadingProvider>
         </ToastProvider>

@@ -1,13 +1,63 @@
 'use client'
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 import { Users, Building, BarChart3, AlertTriangle, CheckCircle, Clock, DollarSign, Activity } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { Card, CardBody } from '@/components/ui/card'
 import Badge from '@/components/ui/Badge'
+import { useToast } from '@/hooks/use-toast'
 
 export default function AdminDashboardPage() {
   const { user } = useAuth()
+  const router = useRouter()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+
+  const handleApproval = async (hospitalName: string, action: 'approve' | 'reject') => {
+    setLoading(true)
+    try {
+      // 실제 API 호출 시뮬레이션
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      toast({
+        title: action === 'approve' ? '승인 완료' : '거절 완료',
+        description: `${hospitalName}의 가입 신청이 ${action === 'approve' ? '승인' : '거절'}되었습니다.`,
+        variant: action === 'approve' ? 'default' : 'destructive'
+      })
+    } catch (error) {
+      toast({
+        title: '오류 발생',
+        description: '처리 중 오류가 발생했습니다. 다시 시도해주세요.',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'users':
+        router.push('/dashboard/admin/users')
+        break
+      case 'hospitals':
+        router.push('/dashboard/admin/hospitals')
+        break
+      case 'analytics':
+        router.push('/dashboard/admin/analytics')
+        break
+      case 'subscriptions':
+        router.push('/dashboard/admin/subscriptions')
+        break
+      default:
+        toast({
+          title: '준비 중',
+          description: '해당 기능은 준비 중입니다.',
+          variant: 'default'
+        })
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -106,8 +156,21 @@ export default function AdminDashboardPage() {
                       </p>
                     </div>
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">거절</Button>
-                      <Button size="sm">승인</Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => handleApproval('서울 비만클리닉', 'reject')}
+                      >
+                        거절
+                      </Button>
+                      <Button 
+                        size="sm"
+                        disabled={loading}
+                        onClick={() => handleApproval('서울 비만클리닉', 'approve')}
+                      >
+                        승인
+                      </Button>
                     </div>
                   </div>
                   
@@ -123,8 +186,21 @@ export default function AdminDashboardPage() {
                       </p>
                     </div>
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">거절</Button>
-                      <Button size="sm">승인</Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => handleApproval('강남 한의원', 'reject')}
+                      >
+                        거절
+                      </Button>
+                      <Button 
+                        size="sm"
+                        disabled={loading}
+                        onClick={() => handleApproval('강남 한의원', 'approve')}
+                      >
+                        승인
+                      </Button>
                     </div>
                   </div>
                   
@@ -140,8 +216,21 @@ export default function AdminDashboardPage() {
                       </p>
                     </div>
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">거절</Button>
-                      <Button size="sm">승인</Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => handleApproval('부산 종합병원', 'reject')}
+                      >
+                        거절
+                      </Button>
+                      <Button 
+                        size="sm"
+                        disabled={loading}
+                        onClick={() => handleApproval('부산 종합병원', 'approve')}
+                      >
+                        승인
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -192,22 +281,38 @@ export default function AdminDashboardPage() {
               </div>
               <CardBody className="p-6">
                 <div className="space-y-4">
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => handleQuickAction('users')}
+                  >
                     <Users className="h-4 w-4 mr-3" />
                     사용자 관리
                   </Button>
                   
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => handleQuickAction('hospitals')}
+                  >
                     <Building className="h-4 w-4 mr-3" />
                     병원 관리
                   </Button>
                   
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => handleQuickAction('analytics')}
+                  >
                     <BarChart3 className="h-4 w-4 mr-3" />
                     통계 분석
                   </Button>
                   
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => handleQuickAction('subscriptions')}
+                  >
                     <DollarSign className="h-4 w-4 mr-3" />
                     구독 관리
                   </Button>

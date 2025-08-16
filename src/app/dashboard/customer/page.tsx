@@ -1,12 +1,77 @@
 'use client'
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 import { TrendingDown, Calendar, MessageCircle, Target, Activity, Award } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { Card, CardBody } from '@/components/ui/card'
+import { useToast } from '@/hooks/use-toast'
 
 export default function CustomerDashboardPage() {
   const { user } = useAuth()
+  const router = useRouter()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'weight-record':
+        handleWeightRecord()
+        break
+      case 'appointments':
+        router.push('/dashboard/customer/appointments')
+        break
+      case 'community':
+        router.push('/dashboard/customer/community')
+        break
+      case 'goals':
+        router.push('/dashboard/customer/goals')
+        break
+      default:
+        toast({
+          title: '준비 중',
+          description: '해당 기능은 준비 중입니다.',
+          variant: 'default'
+        })
+    }
+  }
+
+  const handleWeightRecord = async () => {
+    setLoading(true)
+    try {
+      // 체중 기록 모달이나 페이지로 이동하는 대신 간단한 프롬프트 사용
+      const weight = prompt('오늘의 체중을 입력해주세요 (kg):')
+      
+      if (weight && !isNaN(Number(weight))) {
+        // 실제 API 호출 시뮬레이션
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        toast({
+          title: '체중 기록 완료',
+          description: `오늘의 체중 ${weight}kg가 기록되었습니다.`,
+          variant: 'default'
+        })
+      } else if (weight !== null) {
+        toast({
+          title: '입력 오류',
+          description: '올바른 체중을 입력해주세요.',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      toast({
+        title: '오류 발생',
+        description: '체중 기록 중 오류가 발생했습니다.',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCommunityAction = () => {
+    router.push('/dashboard/customer/community')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,22 +192,39 @@ export default function CustomerDashboardPage() {
               </div>
               <CardBody className="p-6">
                 <div className="space-y-4">
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    disabled={loading}
+                    onClick={() => handleQuickAction('weight-record')}
+                  >
                     <TrendingDown className="h-4 w-4 mr-3" />
                     체중 기록하기
                   </Button>
                   
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => handleQuickAction('appointments')}
+                  >
                     <Calendar className="h-4 w-4 mr-3" />
                     예약 확인
                   </Button>
                   
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => handleQuickAction('community')}
+                  >
                     <MessageCircle className="h-4 w-4 mr-3" />
                     커뮤니티 참여
                   </Button>
                   
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => handleQuickAction('goals')}
+                  >
                     <Target className="h-4 w-4 mr-3" />
                     목표 설정
                   </Button>
@@ -195,7 +277,10 @@ export default function CustomerDashboardPage() {
                   <p className="text-gray-600 mb-4">
                     다른 분들과 경험을 나누고 동기부여를 받아보세요!
                   </p>
-                  <Button className="w-full">
+                  <Button 
+                    className="w-full"
+                    onClick={handleCommunityAction}
+                  >
                     커뮤니티 바로가기
                   </Button>
                 </div>
