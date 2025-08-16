@@ -14,8 +14,6 @@ import { HealthMetrics } from '@/types/health'
 import { appointmentService } from '@/lib/appointmentService'
 import { customerService } from '@/lib/customerService'
 import { Customer } from '@/types/customer'
-import { patientService } from '@/lib/patientService'
-import { Patient } from '@/types/patient'
 
 interface CommunityPost {
   id: string
@@ -71,9 +69,9 @@ export default function PatientDashboard() {
       
       // TODO: 빌드 오류 해결을 위해 임시로 전체 로직 비활성화
       /*
-      const patientData = await patientService.getPatient(patientId)
-      if (patientData) {
-        setPatient(patientData)
+      const customerData = await customerService.getCustomer(patientId)
+      if (customerData) {
+        setPatient(customerData)
         // ... 건강 메트릭 계산 로직
       }
       */

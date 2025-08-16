@@ -1,15 +1,14 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Calendar, Clock, User, CheckCircle, AlertCircle, XCircle, Plus } from 'lucide-react'
+import { Calendar, Clock, User, CheckCircle, AlertCircle, XCircle } from 'lucide-react'
 import { Appointment } from '@/types/appointment'
 
 interface MyAppointmentsProps {
   appointments: Appointment[]
-  onRequestAppointment?: () => void
 }
 
-export default function MyAppointments({ appointments, onRequestAppointment }: MyAppointmentsProps) {
+export default function MyAppointments({ appointments }: MyAppointmentsProps) {
   const [selectedTab, setSelectedTab] = useState<'upcoming' | 'past'>('upcoming')
 
   const now = new Date()
@@ -124,15 +123,6 @@ export default function MyAppointments({ appointments, onRequestAppointment }: M
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">내 예약</h2>
-        {onRequestAppointment && (
-          <button
-            onClick={onRequestAppointment}
-            className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            예약 요청
-          </button>
-        )}
       </div>
 
       {/* 탭 */}
@@ -168,19 +158,10 @@ export default function MyAppointments({ appointments, onRequestAppointment }: M
           </h3>
           <p className="text-gray-600 mb-6">
             {selectedTab === 'upcoming' 
-              ? '새로운 예약을 요청해보세요' 
+              ? '예정된 예약이 없습니다' 
               : '아직 완료된 예약이 없습니다'
             }
           </p>
-          {selectedTab === 'upcoming' && onRequestAppointment && (
-            <button
-              onClick={onRequestAppointment}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              예약 요청하기
-            </button>
-          )}
         </div>
       ) : (
         <div className="space-y-4">

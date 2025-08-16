@@ -34,7 +34,7 @@ interface SystemSettings {
 export default function SystemSettings() {
   const [settings, setSettings] = useState<SystemSettings>({
     siteName: 'OBDOC - 비만 전문 의료진 매칭 플랫폼',
-    siteDescription: '비만 치료 전문의와 환자를 연결하는 헬스케어 플랫폼',
+    siteDescription: '비만 치료 전문의와 고객을 연결하는 헬스케어 플랫폼',
     adminEmail: 'admin@obdoc.co.kr',
     maintenanceMode: false,
     registrationEnabled: true,
@@ -88,7 +88,7 @@ export default function SystemSettings() {
     if (confirm('설정을 기본값으로 초기화하시겠습니까?')) {
       const defaultSettings = {
         siteName: 'OBDOC - 비만 전문 의료진 매칭 플랫폼',
-        siteDescription: '비만 치료 전문의와 환자를 연결하는 헬스케어 플랫폼',
+        siteDescription: '비만 치료 전문의와 고객을 연결하는 헬스케어 플랫폼',
         adminEmail: 'admin@obdoc.co.kr',
         maintenanceMode: false,
         registrationEnabled: true,

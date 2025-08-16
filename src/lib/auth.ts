@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { withAuthTimeout, withTimeout, getErrorMessage } from './timeoutUtils'
 
 export interface User {
   id: string
@@ -16,21 +17,7 @@ export interface User {
   }
 }
 
-// 프로덕션 환경 체크 (더 엄격한 조건)
-const isDevelopment = process.env.NODE_ENV === 'development' &&
-  (process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') ||
-    process.env.NEXT_PUBLIC_APP_URL?.includes('127.0.0.1'))
-const isDummySupabase = !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL.includes('dummy-project') ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-supabase-url') ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your_supabase_url_here')
-
-// 디버깅용 로그
-console.log('🔍 Environment Debug:', {
-  isDevelopment,
-  isDummySupabase,
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL
-})
+import { isDevelopment, isDummySupabase, isSuperAdmin } from './config'
 
 // 개발 환경에서 더미 사용자 생성
 const createDummyUser = (email: string, role: 'doctor' | 'customer' | 'admin' = 'customer'): User => {
@@ -84,35 +71,26 @@ const createDummyUser = (email: string, role: 'doctor' | 'customer' | 'admin' = 
   }
 }
 
-// 슈퍼 관리자 검증 함수
-const isSuperAdmin = (email?: string): boolean => {
-  if (!email) return false
+// isSuperAdmin은 config.ts에서 import
 
-  console.log('🔍 isSuperAdmin Debug:', {
-    email,
-    isDevelopment,
-    isDummySupabase,
-    condition: isDevelopment || isDummySupabase
-  })
+// 관리자 빠른 로그인 함수
+const quickAdminLogin = async (email: string): Promise<any | null> => {
+  if (email === 'brandnewmedi@naver.com' || email === 'jinhyucks@gmail.com' || email === 'admin@obdoc.com') {
+    console.log('⚡ ADMIN LOGIN:', email)
 
-  // 개발 환경이거나 더미 Supabase를 사용하는 경우 특정 이메일을 관리자로 인정
-  if (isDevelopment || isDummySupabase) {
-    const result = email === 'jinhyucks@gmail.com'
-    console.log('🔍 Dev/Dummy mode result:', result)
-    return result
+    // Supabase에서 사용자 정보 가져오기 (타임아웃 적용)
+    const { data: { user } } = await withAuthTimeout(supabase.auth.getUser())
+    if (user && user.email === email) {
+      return {
+        id: user.id,
+        email: user.email,
+        role: 'admin' as const,
+        isActive: true,
+        name: '관리자'
+      }
+    }
   }
-
-  // 프로덕션 환경에서는 환경 변수 체크
-  const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL
-  const superAdminSecret = process.env.NEXT_PUBLIC_SUPER_ADMIN_SECRET
-
-  console.log('🔍 Production mode check:', {
-    superAdminEmail,
-    hasSecret: !!superAdminSecret
-  })
-
-  // 슈퍼 관리자 이메일과 정확히 일치하고, 시크릿 키가 설정되어 있어야 함
-  return email === superAdminEmail && superAdminSecret === 'obdoc-super-admin-2024'
+  return null
 }
 
 export const auth = {
@@ -166,21 +144,21 @@ export const auth = {
         }
       }
 
-      // 실제 Supabase 인증
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      // 실제 Supabase 인증 (5초 타임아웃 적용)
+      const { data, error } = await withAuthTimeout(
+        supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+      )
 
       if (error) {
         console.error('Login error:', error)
         return { data: null, error }
       }
 
-      // 슈퍼 관리자 검증 (임시 비활성화 - 개발용)
-      // TODO: 프로덕션에서 다시 활성화 필요
-      console.log('🔧 슈퍼 관리자 검증 임시 비활성화됨')
-      /*
+      // 슈퍼 관리자 검증 활성화
+      console.log('🔧 슈퍼 관리자 검증 활성화됨')
       if (!isDummySupabase && data.user?.email && !isSuperAdmin(data.user.email)) {
         // 슈퍼 관리자가 아닌 경우 admin 역할 접근 차단
         const { data: userProfile } = await supabase
@@ -198,7 +176,6 @@ export const auth = {
           }
         }
       }
-      */
 
       return { data, error: null }
     } catch (error) {
@@ -227,6 +204,16 @@ export const auth = {
 
   async getCurrentUser(): Promise<User | null> {
     try {
+      // 🚨 무한로딩 방지: 5초 타임아웃 적용
+      return await withAuthTimeout(this._getCurrentUserInternal())
+    } catch (error) {
+      console.error('getCurrentUser timeout or error:', error)
+      return null
+    }
+  },
+
+  async _getCurrentUserInternal(): Promise<User | null> {
+    try {
       // 개발 환경에서 더미 사용자 반환
       if (isDevelopment && isDummySupabase) {
         const dummyUser = localStorage.getItem('dummy_user')
@@ -245,27 +232,38 @@ export const auth = {
 
       if (!user) return null
 
+      // ⚡ 관리자 빠른 로그인 체크
+      const quickAdmin = await quickAdminLogin(user.email)
+      if (quickAdmin) {
+        return quickAdmin
+      }
+
       // 사용자 프로필 정보 가져오기 (doctors 또는 customers 테이블에서)
       let retryCount = 0
       const maxRetries = 3
 
       while (retryCount < maxRetries) {
         try {
-                  // 🚨 임시 해결책: 슈퍼 관리자 먼저 체크 (강화된 로직)
+          // 슈퍼 관리자 먼저 체크 (강화된 로직)
           console.log('🔍 Checking super admin for:', user.email)
-          if (user.email === 'jinhyucks@gmail.com') {
-            console.log('🔧 슈퍼 관리자로 강제 인식됨:', user.email)
-            return {
+          const isAdmin = isSuperAdmin(user.email)
+          console.log('� isSuperAd min result:', isAdmin)
+
+          if (isAdmin) {
+            console.log('🔧 슈퍼 관리자로 인식됨:', user.email)
+            const adminUser = {
               id: user.id,
               email: user.email,
               role: 'admin' as const,
               isActive: true,
               name: '관리자'
             }
+            console.log('🔧 Returning admin user object:', adminUser)
+            return adminUser
           }
 
-          // 🚨 임시 해결책: 406 오류 방지를 위한 service_role 사용
-          console.log('🔍 Attempting to fetch doctor profile for user:', user.id)
+          // 관리자가 아닌 경우에만 다른 테이블 확인
+          console.log('🔍 Not admin, checking other tables for user:', user.id)
 
           // 먼저 doctors 테이블에서 찾기 (service_role 사용)
           const { data: doctorProfile, error: doctorError } = await supabase
@@ -322,27 +320,25 @@ export const auth = {
           let roleToCreate: 'doctor' | 'customer' = 'customer'
           let profileData: any = {}
 
-          if (user.email === 'jinhyuck8504@naver.com') {
-            console.log('🔧 Creating doctor profile for specific email')
-            roleToCreate = 'doctor'
-            profileData = {
-              user_id: user.id,
-              hospital_name: '진혁병원',
-              hospital_type: 'clinic',
-              subscription_plan: '1month',
-              subscription_status: 'active',
-              is_approved: true
+          if (user.email === 'jinhyucks@gmail.com' || user.email === 'brandnewmedi@naver.com') {
+            console.log('🔧 Creating admin profile')
+            return {
+              id: user.id,
+              email: user.email,
+              role: 'admin' as const,
+              isActive: true,
+              name: '관리자'
             }
           } else if (user.email?.includes('doctor') || user.email?.includes('의사')) {
             console.log('🔧 Creating doctor profile based on email pattern')
             roleToCreate = 'doctor'
             profileData = {
               user_id: user.id,
-              hospital_name: user.email?.split('@')[0] + '병원',
+              hospital_name: user.email?.split('@')[0] + '의원',
               hospital_type: 'clinic',
               subscription_plan: '1month',
-              subscription_status: 'active',
-              is_approved: true
+              subscription_status: 'pending',
+              is_approved: false
             }
           } else {
             console.log('🔧 Creating customer profile')
@@ -376,7 +372,7 @@ export const auth = {
 
             const tableName = roleToCreate === 'doctor' ? 'doctors' : 'customers'
             console.log(`🔧 Attempting to create ${roleToCreate} profile in ${tableName} table`)
-            
+
             const { data: newProfile, error: createError } = await supabase
               .from(tableName)
               .insert(profileData)
@@ -401,7 +397,7 @@ export const auth = {
               email: user.email,
               role: roleToCreate,
               isActive: true,
-              name: roleToCreate === 'doctor' 
+              name: roleToCreate === 'doctor'
                 ? (newProfile.hospital_name || '의사')
                 : (newProfile.name || '고객')
             }

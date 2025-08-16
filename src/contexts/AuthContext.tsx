@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { auth, User } from '@/lib/auth'
+import { withAuthTimeout, getErrorMessage } from '@/lib/timeoutUtils'
+import { isDevelopment, isDummySupabase } from '@/lib/config'
 
 interface AuthContextType {
   user: User | null
@@ -24,18 +26,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 자동 로그아웃 타이머 (30분)
   const AUTO_LOGOUT_TIME = 30 * 60 * 1000 // 30분
 
-  // 프로덕션 환경 체크 (더 엄격한 조건)
-  const isDevelopment = process.env.NODE_ENV === 'development' && 
-    (process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') || 
-     process.env.NEXT_PUBLIC_APP_URL?.includes('127.0.0.1'))
-  const isDummySupabase = !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL.includes('dummy-project') ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your_supabase_url_here')
+  // 환경 설정은 config.ts에서 가져오기
 
   const refreshUser = async () => {
     try {
       setLoading(true)
-      const currentUser = await auth.getCurrentUser()
+      // 2초 타임아웃으로 더 빠르게
+      const timeoutPromise = new Promise<User | null>((_, reject) => 
+        setTimeout(() => reject(new Error('User refresh timeout')), 2000)
+      )
+      const userPromise = auth.getCurrentUser()
+      
+      const currentUser = await Promise.race([userPromise, timeoutPromise])
       setUser(currentUser)
     } catch (error) {
       console.error('Error refreshing user:', error)
@@ -48,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true)
-      const { data, error } = await auth.signIn(email, password)
+      const { data, error } = await withAuthTimeout(auth.signIn(email, password))
 
       if (error) {
         return { error }
@@ -60,6 +62,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 세션 정보 로컬 스토리지에 저장
       if (data?.session) {
         localStorage.setItem('supabase.auth.token', JSON.stringify(data.session))
+      }
+
+      // 로그인 성공 후 즉시 리다이렉트 시도
+      const currentUser = await auth.getCurrentUser()
+      if (currentUser) {
+        setUser(currentUser)
+        // 약간의 지연 후 리다이렉트
+        setTimeout(() => {
+          redirectToDashboard(currentUser.role)
+        }, 500)
       }
 
       return { error: null }
@@ -141,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    // 초기 사용자 상태 확인
+    // 초기 사용자 상태 확인 (빠른 로딩)
     const initializeAuth = async () => {
       try {
         // 개발 환경에서 더미 사용자 복원
@@ -158,14 +170,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return
         }
 
-        // 실제 Supabase 세션 복원 시도
-        const { data: { session } } = await supabase.auth.getSession()
+        // 1초 타임아웃으로 빠른 세션 체크
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise<any>((_, reject) => 
+          setTimeout(() => reject(new Error('Session timeout')), 1000)
+        )
 
-        if (session?.user && mounted) {
-          const currentUser = await auth.getCurrentUser()
-          setUser(currentUser)
-        } else if (mounted) {
-          setUser(null)
+        try {
+          const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise])
+          
+          if (session?.user && mounted) {
+            // 사용자 정보도 빠르게 가져오기 (1초 타임아웃)
+            const userPromise = auth.getCurrentUser()
+            const userTimeoutPromise = new Promise<User | null>((_, reject) => 
+              setTimeout(() => reject(new Error('User timeout')), 1000)
+            )
+            
+            try {
+              const currentUser = await Promise.race([userPromise, userTimeoutPromise])
+              setUser(currentUser)
+            } catch (userError) {
+              console.warn('User fetch timeout, using basic session info')
+              // 기본 사용자 정보로 폴백
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                role: 'customer',
+                isActive: true,
+                name: session.user.email?.split('@')[0] || '사용자'
+              })
+            }
+          } else if (mounted) {
+            setUser(null)
+          }
+        } catch (sessionError) {
+          console.warn('Session fetch timeout')
+          if (mounted) {
+            setUser(null)
+          }
         }
       } catch (error) {
         console.error('Auth initialization error:', error)
@@ -180,6 +222,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     initializeAuth()
+
+    // 최대 2초 후에는 무조건 로딩 완료
+    const maxLoadingTimeout = setTimeout(() => {
+      if (mounted) {
+        console.warn('Force completing auth loading after 2 seconds')
+        setLoading(false)
+      }
+    }, 2000)
 
     // 인증 상태 변경 감지 (실제 Supabase에서만)
     let subscription: any = null
@@ -196,7 +246,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(currentUser)
             } catch (error) {
               console.error('Error getting user after sign in:', error)
-              setUser(null)
+              // 세션이 있지만 사용자 정보를 가져올 수 없는 경우, 재시도
+              setTimeout(async () => {
+                try {
+                  const retryUser = await auth.getCurrentUser()
+                  setUser(retryUser)
+                } catch (retryError) {
+                  console.error('Retry failed, signing out:', retryError)
+                  setUser(null)
+                }
+              }, 2000)
             }
           } else if (event === 'SIGNED_OUT') {
             setUser(null)
@@ -206,6 +265,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(currentUser)
             } catch (error) {
               console.error('Error getting user after token refresh:', error)
+              // 토큰 갱신 후 사용자 정보 가져오기 실패 시 재시도
+              setTimeout(async () => {
+                try {
+                  const retryUser = await auth.getCurrentUser()
+                  setUser(retryUser)
+                } catch (retryError) {
+                  console.error('Token refresh retry failed:', retryError)
+                }
+              }, 1000)
             }
           }
 
@@ -219,6 +287,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false
+      clearTimeout(maxLoadingTimeout)
       if (subscription) {
         subscription.unsubscribe()
       }
@@ -262,35 +331,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // 로그인/회원가입 페이지에 있으면 대시보드로 리다이렉트
       if (currentPath === '/login' || currentPath === '/signup') {
+        console.log('🔄 Redirecting from login/signup page...')
         redirectToDashboard(user.role)
       }
       // 루트 경로에서도 대시보드로 리다이렉트 (로그인된 사용자의 경우)
       else if (currentPath === '/') {
+        console.log('🔄 Redirecting from root page...')
         redirectToDashboard(user.role)
       }
     }
-  }, [user, loading, router])
+  }, [user, loading])
 
   const redirectToDashboard = (role: string) => {
-    console.log('Redirecting user with role:', role)
+    console.log('🔄 Redirecting user with role:', role)
+    console.log('🔍 User object:', user)
 
+    let targetPath = '/login'
+    
     switch (role) {
       case 'doctor':
-        router.push('/dashboard/doctor')
+        targetPath = '/dashboard/doctor'
         break
       case 'customer':
-        router.push('/dashboard/customer')
-        break
-      case 'customer':
-        router.push('/dashboard/customer')
+        targetPath = '/dashboard/customer'
         break
       case 'admin':
-        router.push('/dashboard/admin')
+        targetPath = '/dashboard/admin'
         break
       default:
         console.warn('Unknown role:', role)
-        router.push('/login')
+        targetPath = '/login'
     }
+
+    console.log('➡️ Navigating to:', targetPath)
+
+    // Next.js router와 window.location 둘 다 시도
+    router.push(targetPath)
+    
+    // 만약 router.push가 실패하면 window.location으로 강제 이동
+    setTimeout(() => {
+      if (window.location.pathname !== targetPath) {
+        console.log('🔄 Router.push failed, using window.location')
+        window.location.href = targetPath
+      }
+    }, 1000)
   }
 
   const value = {

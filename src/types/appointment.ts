@@ -1,63 +1,61 @@
+/**
+ * 예약 관련 타입 정의
+ */
+
 export interface Appointment {
   id: string
   customerId: string
   doctorId: string
-  customerName: string
-  customerPhone: string
-  doctorName?: string
-  date: string // YYYY-MM-DD
-  time: string // HH:MM
-  duration: number // minutes
-  type: 'consultation' | 'follow_up' | 'initial' | 'emergency'
+  appointmentDate: string
+  appointmentTime: string
   status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
+  type: 'consultation' | 'follow_up' | 'check_up' | 'emergency'
   notes?: string
-  symptoms?: string
-  diagnosis?: string
-  treatment?: string
-  nextAppointment?: string
   createdAt: string
   updatedAt: string
+  
+  // 관계 데이터
+  customer?: {
+    id: string
+    name: string
+    phone?: string
+    email?: string
+  }
+  doctor?: {
+    id: string
+    name: string
+    hospitalName: string
+  }
 }
 
-export interface AppointmentFormData {
+export interface CreateAppointmentRequest {
   customerId: string
-  date: string
-  time: string
-  duration: number
-  type: 'consultation' | 'follow_up' | 'initial' | 'emergency'
+  doctorId: string
+  appointmentDate: string
+  appointmentTime: string
+  type: Appointment['type']
   notes?: string
-  symptoms?: string
+}
+
+export interface UpdateAppointmentRequest {
+  appointmentDate?: string
+  appointmentTime?: string
+  status?: Appointment['status']
+  type?: Appointment['type']
+  notes?: string
 }
 
 export interface AppointmentFilters {
-  date?: string
-  status?: 'all' | 'scheduled' | 'confirmed' | 'completed' | 'cancelled'
-  type?: 'all' | 'consultation' | 'follow_up' | 'initial' | 'emergency'
-  customerName?: string
-  search?: string
-  dateRange?: 'today' | 'week' | 'month'
-  sortBy?: 'date' | 'customer' | 'type' | 'status'
-  sortOrder?: 'asc' | 'desc'
+  doctorId?: string
+  customerId?: string
+  status?: Appointment['status']
+  type?: Appointment['type']
+  dateFrom?: string
+  dateTo?: string
 }
 
 export interface TimeSlot {
   time: string
   available: boolean
   appointmentId?: string
-}
-
-export interface CalendarDay {
-  date: string
-  appointments: Appointment[]
-  isToday: boolean
-  isCurrentMonth: boolean
-}
-
-export interface AppointmentStats {
-  total: number
-  scheduled: number
-  completed: number
-  cancelled: number
-  todayAppointments: number
-  upcomingAppointments: number
 }

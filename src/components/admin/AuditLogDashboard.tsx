@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { AuditLogger } from '@/lib/security'
 import { usePagination } from '@/components/common/Pagination'
 import Pagination from '@/components/common/Pagination'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { 

@@ -26,6 +26,18 @@ export default function AuthGuard({ children, redirectTo = '/login', requiredRol
     }
   }, [user, loading, router, redirectTo])
 
+  // 3초 후 강제로 체크 완료
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isChecking) {
+        console.warn('AuthGuard: Force completing auth check after 3 seconds')
+        setIsChecking(false)
+      }
+    }, 3000)
+
+    return () => clearTimeout(timeout)
+  }, [isChecking])
+
   if (loading || isChecking) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

@@ -162,10 +162,7 @@ export default function CustomerDashboard() {
     window.location.href = '/community'
   }
 
-  const handleRequestAppointment = () => {
-    // TODO: 예약 요청 모달 또는 페이지로 이동
-    alert('예약 요청 기능은 준비 중입니다.')
-  }
+  // 예약 요청 기능 제거됨
 
   const handleCreatePost = () => {
     window.location.href = '/community?action=create'
@@ -288,7 +285,6 @@ export default function CustomerDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <MyAppointments
           appointments={appointments}
-          onRequestAppointment={handleRequestAppointment}
         />
         
         <CommunityShortcut

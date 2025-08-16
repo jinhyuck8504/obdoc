@@ -11,15 +11,15 @@ import { customerService } from '@/lib/customerService'
 import PatientList from './PatientList'
 import PatientDetail from './PatientDetail'
 import PatientForm from './PatientForm'
-import { patientService } from '@/lib/patientService'
+
 import { customerService } from '@/lib/customerService'
 
 export default function PatientManagement() {
-  const [patients, setPatients] = useState<Customer[]>([])
-  const [filteredPatients, setFilteredPatients] = useState<Customer[]>([])
-  const [selectedPatient, setSelectedPatient] = useState<Customer | null>(null)
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [showForm, setShowForm] = useState(false)
-  const [editingPatient, setEditingPatient] = useState<Customer | null>(null)
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<CustomerFilters>({
     search: '',
@@ -28,11 +28,11 @@ export default function PatientManagement() {
     sortOrder: 'asc'
   })
 
-  const fetchPatients = async () => {
+  const fetchCustomers = async () => {
     try {
       setLoading(true)
-      const data = await patientService.getPatients()
-      setPatients(data)
+      const data = await customerService.getCustomers()
+      setCustomers(data)
     } catch (error) {
       console.error('고객 목록 조회 실패:', error)
     } finally {
@@ -41,12 +41,12 @@ export default function PatientManagement() {
   }
 
   useEffect(() => {
-    fetchPatients()
+    fetchCustomers()
   }, [])
 
   // 필터링 로직
   useEffect(() => {
-    let filtered = [...patients]
+    let filtered = [...customers]
 
     // 검색 필터
     if (filters.search) {
@@ -95,90 +95,90 @@ export default function PatientManagement() {
       }
     })
 
-    setFilteredPatients(filtered)
-  }, [patients, filters])
+    setFilteredCustomers(filtered)
+  }, [customers, filters])
 
-  const handleAddPatient = () => {
-    setEditingPatient(null)
+  const handleAddCustomer = () => {
+    setEditingCustomer(null)
     setShowForm(true)
   }
 
-  const handleEditPatient = (customer: Customer) => {
-    setEditingPatient(customer)
+  const handleEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer)
     setShowForm(true)
   }
 
-  const handleDeletePatient = async (patientId: string) => {
+  const handleDeleteCustomer = async (customerId: string) => {
     if (!confirm('정말로 이 고객을 삭제하시겠습니까?')) return
     
     try {
-      await patientService.deletePatient(patientId)
-      setPatients(prev => prev.filter(p => p.id !== patientId))
-      if (selectedPatient?.id === patientId) {
-        setSelectedPatient(null)
+      await customerService.deleteCustomer(customerId)
+      setCustomers(prev => prev.filter(p => p.id !== customerId))
+      if (selectedCustomer?.id === customerId) {
+        setSelectedCustomer(null)
       }
       alert('고객이 삭제되었습니다.')
     } catch (error) {
       console.error('고객 삭제 실패:', error)
-      alert('환자 삭제에 실패했습니다.')
+      alert('고객 삭제에 실패했습니다.')
     }
   }
 
-  const handleSavePatient = async (patientData: any) => {
+  const handleSaveCustomer = async (customerData: any) => {
     try {
-      if (editingPatient) {
+      if (editingCustomer) {
         // 수정
-        const updatedPatient = await patientService.updatePatient(editingPatient.id, patientData)
-        setPatients(prev => prev.map(p => 
-          p.id === editingPatient.id ? updatedPatient : p
+        const updatedCustomer = await customerService.updateCustomer(editingCustomer.id, customerData)
+        setCustomers(prev => prev.map(p => 
+          p.id === editingCustomer.id ? updatedCustomer : p
         ))
-        alert('환자 정보가 수정되었습니다.')
+        alert('고객 정보가 수정되었습니다.')
       } else {
-        // 새 환자 추가
-        const newPatientData = {
-          ...patientData,
-          emergencyContact: patientData.emergencyContactName ? {
-            name: patientData.emergencyContactName,
-            phone: patientData.emergencyContactPhone,
-            relationship: patientData.emergencyContactRelationship
+        // 새 고객 추가
+        const newCustomerData = {
+          ...customerData,
+          emergencyContact: customerData.emergencyContactName ? {
+            name: customerData.emergencyContactName,
+            phone: customerData.emergencyContactPhone,
+            relationship: customerData.emergencyContactRelationship
           } : undefined,
           status: 'active' as const,
           startDate: new Date().toISOString().split('T')[0],
           doctorId: 'doctor1'
         }
-        const newPatient = await patientService.createPatient(newPatientData)
-        setPatients(prev => [newPatient, ...prev])
-        alert('환자가 등록되었습니다.')
+        const newCustomer = await customerService.createCustomer(newCustomerData)
+        setCustomers(prev => [newCustomer, ...prev])
+        alert('고객이 등록되었습니다.')
       }
       setShowForm(false)
-      setEditingPatient(null)
+      setEditingCustomer(null)
     } catch (error) {
-      console.error('환자 저장 실패:', error)
-      alert('환자 정보 저장에 실패했습니다.')
+      console.error('고객 저장 실패:', error)
+      alert('고객 정보 저장에 실패했습니다.')
     }
   }
 
   // 통계 계산
   const stats = {
-    total: patients.length,
-    active: patients.filter(p => p.status === 'active').length,
-    completed: patients.filter(p => p.status === 'completed').length,
-    averageProgress: patients.length > 0 
-      ? Math.round(patients.reduce((acc, p) => {
+    total: customers.length,
+    active: customers.filter(p => p.status === 'active').length,
+    completed: customers.filter(p => p.status === 'completed').length,
+    averageProgress: customers.length > 0 
+      ? Math.round(customers.reduce((acc, p) => {
           const progress = ((p.initialWeight - p.currentWeight) / (p.initialWeight - p.targetWeight)) * 100
           return acc + Math.max(0, Math.min(100, progress))
-        }, 0) / patients.length)
+        }, 0) / customers.length)
       : 0
   }
 
   if (showForm) {
     return (
       <PatientForm
-        customer={editingPatient}
-        onSave={handleSavePatient}
+        customer={editingCustomer}
+        onSave={handleSaveCustomer}
         onCancel={() => {
           setShowForm(false)
-          setEditingPatient(null)
+          setEditingCustomer(null)
         }}
       />
     )
@@ -202,15 +202,15 @@ export default function PatientManagement() {
         <BackButton className="mb-2" />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">환자 관리</h1>
-            <p className="text-gray-600 mt-1">환자 정보를 등록하고 관리하세요</p>
+            <h1 className="text-3xl font-bold text-gray-900">고객 관리</h1>
+            <p className="text-gray-600 mt-1">고객 정보를 등록하고 관리하세요</p>
           </div>
           <button
             onClick={handleAddPatient}
             className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
           >
             <Plus className="w-5 h-5 mr-2" />
-            새 환자 등록
+            새 고객 등록
           </button>
         </div>
       </div>
@@ -220,7 +220,7 @@ export default function PatientManagement() {
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-sm font-medium">전체 환자</p>
+              <p className="text-blue-100 text-sm font-medium">전체 고객</p>
               <p className="text-3xl font-bold">{stats.total}</p>
             </div>
             <Users className="h-8 w-8 text-blue-200" />
@@ -230,7 +230,7 @@ export default function PatientManagement() {
         <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-100 text-sm font-medium">활성 환자</p>
+              <p className="text-green-100 text-sm font-medium">활성 고객</p>
               <p className="text-3xl font-bold">{stats.active}</p>
             </div>
             <Activity className="h-8 w-8 text-green-200" />
@@ -266,7 +266,7 @@ export default function PatientManagement() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="환자명, 전화번호, 이메일로 검색"
+              placeholder="고객명, 전화번호, 이메일로 검색"
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -308,11 +308,11 @@ export default function PatientManagement() {
         </div>
       </div>
 
-      {/* 환자 목록 */}
+      {/* 고객 목록 */}
       <PatientList
-        patients={filteredPatients}
+        patients={filteredCustomers}
         loading={loading}
-        onSelectPatient={setSelectedPatient}
+        onSelectPatient={setSelectedCustomer}
         onEditPatient={handleEditPatient}
         onDeletePatient={handleDeletePatient}
       />

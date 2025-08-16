@@ -208,11 +208,11 @@ export default function AppointmentDetail({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* 메인 정보 */}
         <div className="lg:col-span-2 space-y-8">
-          {/* 환자 정보 */}
+          {/* 고객 정보 */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center space-x-2 mb-6">
               <User className="w-5 h-5 text-blue-600" />
-              <h3 className="text-lg font-semibold text-gray-900">환자 정보</h3>
+              <h3 className="text-lg font-semibold text-gray-900">고객 정보</h3>
             </div>
 
             <div className="flex items-center space-x-4">

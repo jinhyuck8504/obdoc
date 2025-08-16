@@ -19,6 +19,10 @@ import RevenueChart from './widgets/RevenueChart'
 import HospitalTypeChart from './widgets/HospitalTypeChart'
 import UserActivityChart from './widgets/UserActivityChart'
 import ChartErrorBoundary from '../common/ChartErrorBoundary'
+import SupabaseConnectionTest from './SupabaseConnectionTest'
+import AuthenticationTest from './AuthenticationTest'
+import RoleBasedAccessTest from './RoleBasedAccessTest'
+import CRUDOperationTest from './CRUDOperationTest'
 
 export default function AdminStatsDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -232,6 +236,18 @@ export default function AdminStatsDashboard() {
           loading={loading}
         />
       </div>
+
+      {/* Supabase 연결 상태 및 테스트 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SupabaseConnectionTest />
+        <AuthenticationTest />
+      </div>
+      
+      {/* 역할별 접근 권한 테스트 */}
+      <RoleBasedAccessTest />
+      
+      {/* CRUD 작업 테스트 */}
+      <CRUDOperationTest />
 
       {/* 시스템 상태 */}
       {stats && (

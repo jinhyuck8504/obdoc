@@ -26,9 +26,9 @@ export const encryptedQueries = {
   },
 
   // 고객 정보 조회 (복호화된 뷰 사용)
-  async getPatients(doctorId: string) {
+  async getCustomers(doctorId: string) {
     const { data, error } = await supabase
-      .from('patients_decrypted')
+      .from('customers_decrypted')
       .select('*')
       .eq('doctor_id', doctorId)
     
@@ -67,19 +67,19 @@ export const encryptedQueries = {
   },
 
   // 암호화된 고객 데이터 삽입
-  async insertEncryptedPatient(patientData: {
+  async insertEncryptedCustomer(customerData: {
     user_id: string
     doctor_id: string
     name: string
     phone?: string
     health_data?: any
   }) {
-    const { data, error } = await supabase.rpc('insert_encrypted_patient', {
-      p_user_id: patientData.user_id,
-      p_doctor_id: patientData.doctor_id,
-      p_name: patientData.name,
-      p_phone: patientData.phone || null,
-      p_health_data: JSON.stringify(patientData.health_data || {})
+    const { data, error } = await supabase.rpc('insert_encrypted_customer', {
+      p_user_id: customerData.user_id,
+      p_doctor_id: customerData.doctor_id,
+      p_name: customerData.name,
+      p_phone: customerData.phone || null,
+      p_health_data: JSON.stringify(customerData.health_data || {})
     })
     
     return { data, error }

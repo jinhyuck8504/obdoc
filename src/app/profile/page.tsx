@@ -109,7 +109,7 @@ export default function ProfilePage() {
   const getRoleDisplayName = (role: string) => {
     switch (role) {
       case 'doctor': return '의사(한의사)'
-      case 'patient': return '환자'
+      case 'patient': return '고객'
       case 'admin': return '관리자'
       default: return '사용자'
     }

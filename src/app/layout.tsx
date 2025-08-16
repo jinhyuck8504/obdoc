@@ -5,7 +5,6 @@ import Layout from "@/components/common/Layout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
-import { DensityProvider } from "@/contexts/DensityContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -13,9 +12,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Obdoc - 비만 관리의 흐름을 설계하다",
-  description: "대한민국 모든 비만 클리닉과 고객들을 연결하는 필수적인 파트너",
-  keywords: "비만 관리, 다이어트, 병원관리, 고객관리, 체중관리",
+  title: "Obdoc - 비만치료의 흐름을 설계하다",
+  description: "브랜뉴메디가 제공하는 비만 클리닉 전용 고객 관리 솔루션. 의료진과 환자를 위한 전문적인 비만 관리 플랫폼",
+  keywords: "오비닥, Obdoc, 브랜뉴메디, 비만 관리, 다이어트, 병원관리, 고객관리, 체중관리, 의료진, 클리닉",
 };
 
 export default function RootLayout({
@@ -28,13 +27,11 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <ToastProvider>
           <LoadingProvider>
-            <DensityProvider>
-              <AuthProvider>
-                <Layout>
-                  {children}
-                </Layout>
-              </AuthProvider>
-            </DensityProvider>
+            <AuthProvider>
+              <Layout>
+                {children}
+              </Layout>
+            </AuthProvider>
           </LoadingProvider>
         </ToastProvider>
       </body>

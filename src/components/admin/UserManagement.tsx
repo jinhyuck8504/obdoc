@@ -50,7 +50,7 @@ export default function UserManagement() {
   const getRoleBadge = (role: string) => {
     const roleConfig = {
       doctor: { label: '의사', color: 'bg-blue-100 text-blue-800' },
-      patient: { label: '환자', color: 'bg-green-100 text-green-800' },
+      patient: { label: '고객', color: 'bg-green-100 text-green-800' },
       admin: { label: '관리자', color: 'bg-purple-100 text-purple-800' }
     }
     const config = roleConfig[role as keyof typeof roleConfig]
@@ -201,7 +201,7 @@ export default function UserManagement() {
             >
               <option value="all">모든 역할</option>
               <option value="doctor">의사</option>
-              <option value="patient">환자</option>
+              <option value="patient">고객</option>
               <option value="admin">관리자</option>
             </select>
           </div>
@@ -426,7 +426,7 @@ export default function UserManagement() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="doctor">의사</option>
-                  <option value="patient">환자</option>
+                  <option value="patient">고객</option>
                   <option value="admin">관리자</option>
                 </select>
               </div>
@@ -502,7 +502,7 @@ export default function UserManagement() {
                   onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value as any }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="patient">환자</option>
+                  <option value="patient">고객</option>
                   <option value="doctor">의사</option>
                   <option value="admin">관리자</option>
                 </select>

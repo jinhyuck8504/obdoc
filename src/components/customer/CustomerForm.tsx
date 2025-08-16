@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { Customer } from '@/types/customer'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 

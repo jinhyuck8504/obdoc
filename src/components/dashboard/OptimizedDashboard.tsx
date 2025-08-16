@@ -1,134 +1,107 @@
-'use client'
-
+/**
+ * 성능 최적화된 대시보드 래퍼
+ */
 import React, { Suspense, lazy } from 'react'
-import { WidgetErrorBoundary } from './ErrorBoundary'
-import { WidgetSkeleton, CalendarSkeleton, TasksSkeleton, SearchSkeleton } from './LoadingStates'
-import { useDashboardOptimization } from '@/hooks/useDashboardOptimization'
+import { useLazyLoading, logMemoryUsage } from '@/lib/performanceUtils'
 
-// 지연 로딩으로 위젯 컴포넌트들 import
+// 위젯들을 지연 로딩
 const TodayTasks = lazy(() => import('./widgets/TodayTasks'))
 const Calendar = lazy(() => import('./widgets/Calendar'))
-const QuickSearch = lazy(() => import('./widgets/QuickSearch'))
-const RecentActivity = lazy(() => import('./widgets/RecentActivity'))
 
-interface OptimizedDashboardProps {
-  userRole: 'doctor' | 'customer' | 'admin'
+interface LazyWidgetProps {
+  children: React.ReactNode
+  fallback?: React.ReactNode
+  threshold?: number
 }
 
-/**
- * 성능 최적화된 대시보드 컴포넌트
- */
-export default function OptimizedDashboard({ userRole }: OptimizedDashboardProps) {
-  const { data, stats, recentActivity } = useDashboardOptimization()
-
-  // 역할별 위젯 구성
-  const widgetConfig = React.useMemo(() => {
-    const baseWidgets = [
-      {
-        id: 'tasks',
-        component: TodayTasks,
-        skeleton: TasksSkeleton,
-        priority: 1,
-        name: '오늘 할 일'
-      },
-      {
-        id: 'calendar',
-        component: Calendar,
-        skeleton: CalendarSkeleton,
-        priority: 2,
-        name: '일정'
-      }
-    ]
-
-    if (userRole === 'doctor') {
-      return [
-        ...baseWidgets,
-        {
-          id: 'search',
-          component: QuickSearch,
-          skeleton: SearchSkeleton,
-          priority: 3,
-          name: '빠른 검색'
-        },
-        {
-          id: 'activity',
-          component: RecentActivity,
-          skeleton: () => <WidgetSkeleton title="최근 활동" rows={5} />,
-          priority: 4,
-          name: '최근 활동'
-        }
-      ]
-    }
-
-    if (userRole === 'customer') {
-      return [
-        ...baseWidgets,
-        {
-          id: 'activity',
-          component: RecentActivity,
-          skeleton: () => <WidgetSkeleton title="최근 활동" rows={3} />,
-          priority: 3,
-          name: '최근 활동'
-        }
-      ]
-    }
-
-    return baseWidgets
-  }, [userRole])
-
-  // 위젯 렌더링 함수 (메모이제이션)
-  const renderWidget = React.useCallback((widget: typeof widgetConfig[0]) => {
-    const { id, component: WidgetComponent, skeleton: SkeletonComponent, name } = widget
-
-    return (
-      <WidgetErrorBoundary key={id} widgetName={name}>
-        <Suspense fallback={<SkeletonComponent />}>
-          <WidgetComponent />
-        </Suspense>
-      </WidgetErrorBoundary>
-    )
-  }, [])
-
-  // 성능 모니터링 (개발 환경에서만)
-  React.useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Dashboard Performance Stats:', {
-        ...stats,
-        widgetCount: widgetConfig.length,
-        userRole
-      })
-    }
-  }, [stats, widgetConfig.length, userRole])
+function LazyWidget({ children, fallback = <div className="animate-pulse bg-gray-200 h-64 rounded-lg"></div>, threshold = 0.1 }: LazyWidgetProps) {
+  const { ref, isVisible } = useLazyLoading(threshold)
 
   return (
-    <div className="space-y-6">
-      {/* 성능 통계 (개발 환경에서만 표시) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-yellow-800 mb-2">성능 통계</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-yellow-700">
-            <div>환자: {stats.totalPatients}</div>
-            <div>예약: {stats.totalAppointments}</div>
-            <div>작업: {stats.totalTasks}</div>
-            <div>캐시: {stats.cacheSize}개</div>
-          </div>
-        </div>
+    <div ref={ref}>
+      {isVisible ? (
+        <Suspense fallback={fallback}>
+          {children}
+        </Suspense>
+      ) : (
+        fallback
       )}
+    </div>
+  )
+}
 
-      {/* 위젯 그리드 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {widgetConfig
-          .sort((a, b) => a.priority - b.priority)
-          .map(renderWidget)}
+interface OptimizedDashboardProps {
+  enableLazyLoading?: boolean
+  enableMemoryLogging?: boolean
+}
+
+export default function OptimizedDashboard({ 
+  enableLazyLoading = true,
+  enableMemoryLogging = false 
+}: OptimizedDashboardProps) {
+  React.useEffect(() => {
+    if (enableMemoryLogging && process.env.NODE_ENV === 'development') {
+      logMemoryUsage('Dashboard Mount')
+      
+      const interval = setInterval(() => {
+        logMemoryUsage('Dashboard Runtime')
+      }, 30000) // 30초마다 메모리 사용량 로깅
+
+      return () => clearInterval(interval)
+    }
+  }, [enableMemoryLogging])
+
+  const WidgetWrapper = enableLazyLoading ? LazyWidget : Suspense
+  const fallback = <div className="animate-pulse bg-gray-200 h-64 rounded-lg"></div>
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 왼쪽 컬럼 */}
+      <div className="space-y-6">
+        <WidgetWrapper fallback={fallback}>
+          <TodayTasks />
+        </WidgetWrapper>
       </div>
 
-      {/* 데이터 새로고침 정보 */}
-      <div className="text-center text-xs text-gray-500">
-        마지막 업데이트: {stats.lastUpdated.toLocaleTimeString('ko-KR')}
+      {/* 오른쪽 컬럼 */}
+      <div className="space-y-4">
+        <WidgetWrapper fallback={fallback}>
+          <Calendar />
+        </WidgetWrapper>
       </div>
     </div>
   )
 }
 
-// 메모이제이션된 컴포넌트로 내보내기
-export const MemoizedOptimizedDashboard = React.memo(OptimizedDashboard)
+// 성능 최적화된 대시보드 메트릭 표시 컴포넌트
+export function DashboardMetrics() {
+  const [metrics, setMetrics] = React.useState<any[]>([])
+
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const interval = setInterval(() => {
+        import('@/lib/performanceUtils').then(({ performanceMonitor }) => {
+          setMetrics(performanceMonitor.getMetrics())
+        })
+      }, 1000)
+
+      return () => clearInterval(interval)
+    }
+  }, [])
+
+  if (process.env.NODE_ENV !== 'development' || metrics.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="fixed bottom-4 right-4 bg-black bg-opacity-80 text-white p-3 rounded-lg text-xs max-w-sm">
+      <h4 className="font-bold mb-2">Performance Metrics</h4>
+      {metrics.slice(-5).map((metric, index) => (
+        <div key={index} className="flex justify-between">
+          <span>{metric.name}:</span>
+          <span>{metric.duration?.toFixed(2)}ms</span>
+        </div>
+      ))}
+    </div>
+  )
+}

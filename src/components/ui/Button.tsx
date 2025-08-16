@@ -1,58 +1,49 @@
+'use client'
 import React from 'react'
-import { Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'outline' | 'ghost'
+  variant?: 'default' | 'outline' | 'ghost' | 'destructive'
   size?: 'sm' | 'md' | 'lg' | 'xl'
-  loading?: boolean
   children: React.ReactNode
 }
 
-export default function Button({
-  variant = 'primary',
+const Button: React.FC<ButtonProps> = ({
+  variant = 'default',
   size = 'md',
-  loading = false,
-  disabled,
+  className,
   children,
-  className = '',
   ...props
-}: ButtonProps) {
-  const baseClasses = 'btn focus-brand'
+}) => {
+  const baseClasses = 'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
   
   const variantClasses = {
-    primary: 'btn-primary',
-    secondary: 'btn-secondary',
-    success: 'btn-success',
-    warning: 'btn-warning',
-    danger: 'btn-danger',
-    outline: 'btn-outline',
-    ghost: 'btn-ghost'
+    default: 'bg-slate-800 text-white hover:bg-slate-700 focus:ring-slate-500 shadow-sm',
+    outline: 'border border-slate-300 text-slate-700 hover:bg-slate-50 focus:ring-slate-500',
+    ghost: 'text-slate-700 hover:bg-slate-100 focus:ring-slate-500',
+    destructive: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm'
   }
   
   const sizeClasses = {
-    sm: 'btn-sm',
-    md: '',
-    lg: 'btn-lg',
-    xl: 'btn-xl'
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-6 py-3 text-base',
+    xl: 'px-8 py-4 text-lg'
   }
-  
-  const classes = [
-    baseClasses,
-    variantClasses[variant],
-    sizeClasses[size],
-    className
-  ].filter(Boolean).join(' ')
-  
+
   return (
     <button
-      className={classes}
-      disabled={disabled || loading}
+      className={cn(
+        baseClasses,
+        variantClasses[variant],
+        sizeClasses[size],
+        className
+      )}
       {...props}
     >
-      {loading && (
-        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-      )}
       {children}
     </button>
   )
 }
+
+export default Button

@@ -77,7 +77,7 @@ export default function LoginForm() {
           <div className="text-xs text-blue-500 space-y-1">
             <div>• doctor@test.com → 의사 계정</div>
             <div>• admin@test.com → 관리자 계정</div>
-            <div>• patient@test.com → 환자 계정</div>
+            <div>• patient@test.com → 고객 계정</div>
           </div>
         </div>
       )}

@@ -64,12 +64,12 @@ const nextConfig = {
     ]
   },
 
-  // 빌드 설정
+  // 빌드 설정 (프로덕션에서는 엄격하게)
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: process.env.NODE_ENV === 'development',
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: process.env.NODE_ENV === 'development',
   },
 
   // Netlify 배포 최적화

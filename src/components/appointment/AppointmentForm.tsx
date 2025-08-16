@@ -91,7 +91,7 @@ export default function AppointmentForm({ appointment, onSave, onCancel }: Appoi
     const newErrors: Record<string, string> = {}
 
     if (!formData.customerId) {
-      newErrors.customerId = '환자를 선택해주세요'
+      newErrors.customerId = '고객을 선택해주세요'
     }
 
     if (!formData.date) {
@@ -187,17 +187,17 @@ export default function AppointmentForm({ appointment, onSave, onCancel }: Appoi
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* 환자 선택 */}
+        {/* 고객 선택 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center space-x-2 mb-6">
             <User className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">환자 선택</h2>
+            <h2 className="text-lg font-semibold text-gray-900">고객 선택</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                환자 <span className="text-red-500">*</span>
+                고객 <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.customerId}
@@ -206,7 +206,7 @@ export default function AppointmentForm({ appointment, onSave, onCancel }: Appoi
                   errors.customerId ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">환자를 선택하세요</option>
+                <option value="">고객을 선택하세요</option>
                 {customers.map((customer: Customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name} ({customer.phone})
@@ -220,7 +220,7 @@ export default function AppointmentForm({ appointment, onSave, onCancel }: Appoi
 
             {selectedCustomer && (
               <div className="p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-medium text-blue-900 mb-2">선택된 환자 정보</h3>
+                <h3 className="font-medium text-blue-900 mb-2">선택된 고객 정보</h3>
                 <div className="space-y-1 text-sm text-blue-800">
                   <p><strong>이름:</strong> {selectedCustomer.name}</p>
                   <p><strong>전화번호:</strong> {selectedCustomer.phone}</p>
@@ -342,7 +342,7 @@ export default function AppointmentForm({ appointment, onSave, onCancel }: Appoi
                 onChange={(e) => handleInputChange('symptoms', e.target.value)}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="환자의 증상이나 상담하고 싶은 내용을 입력하세요"
+                placeholder="고객의 증상이나 상담하고 싶은 내용을 입력하세요"
               />
             </div>
 
@@ -371,7 +371,7 @@ export default function AppointmentForm({ appointment, onSave, onCancel }: Appoi
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-blue-700"><strong>환자:</strong> {selectedCustomer?.name}</p>
+                <p className="text-blue-700"><strong>고객:</strong> {selectedCustomer?.name}</p>
                 <p className="text-blue-700"><strong>전화번호:</strong> {selectedCustomer?.phone}</p>
               </div>
               <div>

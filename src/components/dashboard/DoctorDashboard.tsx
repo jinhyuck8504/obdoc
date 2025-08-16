@@ -8,6 +8,8 @@ import TodayTasks from './widgets/TodayTasks'
 import CustomerStatus from './widgets/CustomerStatus'
 import Calendar from './widgets/Calendar'
 import QuickSearch from './widgets/QuickSearch'
+import RecentActivity from './widgets/RecentActivity'
+import DataSyncTest from './widgets/DataSyncTest'
 import BackButton from '@/components/common/BackButton'
 import { SafeTimeDisplay } from '@/components/hydration'
 import ClientOnly from '@/components/common/ClientOnly'
@@ -150,34 +152,9 @@ export default function DoctorDashboard() {
         {/* 오른쪽 컬럼 - 캘린더와 최근 활동 */}
         <div className="lg:col-span-1 space-y-4">
           <Calendar />
-          
-          {/* 최근 활동 - 컴팩트 버전 */}
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">최근 활동</h3>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">김철수 고객 상담 완료</p>
-                  <p className="text-xs text-gray-500">10분 전</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">이영희 체중 기록 업데이트</p>
-                  <p className="text-xs text-gray-500">25분 전</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">박민수 식단 상담</p>
-                  <p className="text-xs text-gray-500">1시간 전</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <RecentActivity />
+          {/* 개발 중에만 표시되는 동기화 테스트 컴포넌트 */}
+          {process.env.NODE_ENV === 'development' && <DataSyncTest />}
         </div>
       </div>
       </div>

@@ -7,7 +7,7 @@
 2. 우상단 "+" 버튼 클릭 → "New repository" 선택
 3. 리포지토리 설정:
    - **Repository name**: `obdoc`
-   - **Description**: `의료진과 환자를 위한 통합 플랫폼`
+   - **Description**: `의료진과 고객을 위한 통합 플랫폼`
    - **Visibility**: Private (권장) 또는 Public
    - **Initialize this repository with**: 체크하지 않음 (이미 로컬에 코드가 있음)
 4. "Create repository" 클릭
@@ -15,7 +15,7 @@
 ### 명령어로 생성 (GitHub CLI 사용)
 ```bash
 # GitHub CLI 설치 후
-gh repo create obdoc --private --description "의료진과 환자를 위한 통합 플랫폼"
+gh repo create obdoc --private --description "의료진과 고객을 위한 통합 플랫폼"
 ```
 
 ## 2. 로컬 리포지토리와 연결

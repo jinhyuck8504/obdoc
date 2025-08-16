@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "../styles/design-system.css";
-
 /* Obdoc Global Styles */
 :root {
   --background: #ffffff;

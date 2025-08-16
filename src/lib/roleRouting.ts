@@ -152,7 +152,7 @@ export function getNavigationItems(role: UserRole) {
     case 'doctor':
       return [
         { name: '대시보드', href: '/dashboard/doctor', icon: 'Home' },
-        { name: '고객 관리', href: '/dashboard/doctor?tab=patients', icon: 'Users' },
+        { name: '고객 관리', href: '/dashboard/doctor?tab=customers', icon: 'Users' },
         { name: '예약 관리', href: '/dashboard/doctor?tab=appointments', icon: 'Calendar' },
         ...commonItems
       ]

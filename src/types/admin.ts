@@ -2,7 +2,7 @@ export interface AdminStats {
   // 사용자 통계
   totalUsers: number
   totalDoctors: number
-  totalPatients: number
+  totalCustomers: number
   activeUsers: number
   newUsersThisMonth: number
   
@@ -83,7 +83,7 @@ export interface AdminFilters {
   dateRange: 'today' | 'week' | 'month' | '3months' | '6months' | 'year' | 'custom'
   hospitalType?: string
   subscriptionStatus?: 'all' | 'active' | 'pending' | 'expired'
-  userType?: 'all' | 'doctors' | 'patients'
+  userType?: 'all' | 'doctors' | 'customers'
   startDate?: string
   endDate?: string
 }

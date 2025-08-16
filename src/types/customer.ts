@@ -5,6 +5,7 @@ export interface Customer {
   phone: string
   address?: string
   dateOfBirth?: string
+  birthDate?: string
   gender?: 'male' | 'female' | 'other'
   height?: number
   initialWeight?: number
@@ -16,6 +17,14 @@ export interface Customer {
   notes?: string
   createdAt: string
   updatedAt: string
+  medicalHistory?: string
+  allergies?: string
+  medications?: string
+  emergencyContact?: {
+    name: string
+    phone: string
+    relationship: string
+  }
 }
 
 export interface CustomerFormData {
@@ -27,6 +36,22 @@ export interface CustomerFormData {
   gender?: 'male' | 'female' | 'other'
   height?: number
   initialWeight?: number
+  currentWeight?: number
   targetWeight?: number
   notes?: string
+  birthDate?: string
+  medicalHistory?: string
+  allergies?: string
+  medications?: string
+  emergencyContactName?: string
+  emergencyContactPhone?: string
+  emergencyContactRelationship?: string
+}
+
+export interface CustomerFilters {
+  search: string
+  status: 'all' | 'active' | 'inactive' | 'completed'
+  gender: 'all' | 'male' | 'female' | 'other'
+  sortBy: 'name' | 'startDate' | 'progress'
+  sortOrder: 'asc' | 'desc'
 }

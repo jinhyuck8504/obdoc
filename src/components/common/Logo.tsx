@@ -1,65 +1,80 @@
+'use client'
 import React from 'react'
-import Link from 'next/link'
 import { Activity } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface LogoProps {
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   showText?: boolean
   showSlogan?: boolean
   className?: string
-  href?: string
+  variant?: 'default' | 'white' | 'dark'
 }
 
-export default function Logo({ 
-  size = 'md', 
-  showText = true, 
+const Logo: React.FC<LogoProps> = ({
+  size = 'md',
+  showText = true,
   showSlogan = false,
   className = '',
-  href = '/'
-}: LogoProps) {
+  variant = 'default'
+}) => {
   const sizeClasses = {
-    sm: {
-      icon: 'h-6 w-6',
-      text: 'text-lg',
-      slogan: 'text-xs'
-    },
-    md: {
-      icon: 'h-8 w-8',
-      text: 'text-2xl',
-      slogan: 'text-sm'
-    },
-    lg: {
-      icon: 'h-12 w-12',
-      text: 'text-4xl',
-      slogan: 'text-base'
-    }
+    sm: 'h-6 w-6',
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12',
+    xl: 'h-16 w-16'
   }
 
-  const LogoContent = () => (
-    <div className={`flex items-center space-x-2 ${className}`}>
-      <Activity className={`${className.includes('text-white') ? 'text-white' : 'text-slate-800'} ${sizeClasses[size].icon}`} />
+  const textSizeClasses = {
+    sm: 'text-lg',
+    md: 'text-xl',
+    lg: 'text-3xl',
+    xl: 'text-4xl'
+  }
+
+  const sloganSizeClasses = {
+    sm: 'text-xs',
+    md: 'text-sm',
+    lg: 'text-base',
+    xl: 'text-lg'
+  }
+
+  const variantClasses = {
+    default: 'text-slate-800',
+    white: 'text-white',
+    dark: 'text-slate-900'
+  }
+
+  return (
+    <div className={cn('flex items-center', className)}>
+      <div className={cn(
+        'rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 p-2 shadow-lg',
+        sizeClasses[size]
+      )}>
+        <Activity className="h-full w-full text-white" />
+      </div>
+      
       {showText && (
-        <div className="flex flex-col">
-          <div className={`font-bold ${className.includes('text-white') ? 'text-white' : 'text-slate-800'} ${sizeClasses[size].text}`}>
+        <div className="ml-3">
+          <div className={cn(
+            'font-bold tracking-tight',
+            textSizeClasses[size],
+            variantClasses[variant]
+          )}>
             Obdoc
           </div>
           {showSlogan && (
-            <div className={`${className.includes('text-white') ? 'text-white/80' : 'text-gray-500'} ${sizeClasses[size].slogan} -mt-1`}>
-              비만 관리의 흐름을 설계하다
+            <div className={cn(
+              'text-gray-500 font-medium',
+              sloganSizeClasses[size]
+            )}>
+              비만치료의 흐름을 설계하다
             </div>
           )}
         </div>
       )}
     </div>
   )
-
-  if (href) {
-    return (
-      <Link href={href} className="inline-block">
-        <LogoContent />
-      </Link>
-    )
-  }
-
-  return <LogoContent />
 }
+
+export default Logo

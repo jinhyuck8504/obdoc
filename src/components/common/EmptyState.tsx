@@ -23,7 +23,7 @@ export default function EmptyState({
   const getDefaultIcon = () => {
     switch (variant) {
       case 'patients':
-        return <Users className="h-20 w-20 text-gray-300" />
+        return null // 고객 관련 빈 상태에서는 아이콘 제거
       case 'appointments':
         return <Calendar className="h-20 w-20 text-gray-300" />
       case 'community':

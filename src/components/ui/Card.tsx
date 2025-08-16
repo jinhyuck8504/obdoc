@@ -5,6 +5,7 @@ interface CardProps {
   className?: string
   hover?: boolean
   medical?: boolean
+  onClick?: () => void
 }
 
 interface CardHeaderProps {
@@ -22,15 +23,16 @@ interface CardFooterProps {
   className?: string
 }
 
-export function Card({ children, className = '', hover = false, medical = false }: CardProps) {
+export function Card({ children, className = '', hover = false, medical = false, onClick }: CardProps) {
   const classes = [
     medical ? 'medical-card' : 'card',
     hover ? 'hover-glow' : '',
+    onClick ? 'cursor-pointer' : '',
     className
   ].filter(Boolean).join(' ')
   
   return (
-    <div className={classes}>
+    <div className={classes} onClick={onClick}>
       {children}
     </div>
   )
@@ -59,3 +61,14 @@ export function CardFooter({ children, className = '' }: CardFooterProps) {
     </div>
   )
 }
+
+// Export aliases for compatibility with shadcn/ui naming conventions
+export const CardTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
+  <h3 className={`text-lg font-semibold ${className}`}>{children}</h3>
+)
+
+export const CardDescription = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
+  <p className={`text-sm text-gray-600 ${className}`}>{children}</p>
+)
+
+export const CardContent = CardBody

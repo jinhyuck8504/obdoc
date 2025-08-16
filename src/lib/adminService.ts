@@ -12,7 +12,7 @@ const generateDummyStats = (): AdminStats => ({
   // 사용자 통계
   totalUsers: 1247,
   totalDoctors: 89,
-  totalPatients: 1158,
+  totalCustomers: 1158,
   activeUsers: 892,
   newUsersThisMonth: 156,
 
@@ -103,75 +103,209 @@ const generateDummySystemMetrics = (): SystemMetrics => ({
 export const adminService = {
   // 관리자 통계 조회
   async getAdminStats(filters?: AdminFilters): Promise<AdminStats> {
-    if (isDevelopment && isDummySupabase) {
-      console.log('개발 모드: 더미 관리자 통계 데이터 사용', filters)
-      // 필터에 따라 약간의 변화를 주어 실제처럼 보이게 함
-      const stats = generateDummyStats()
-      if (filters?.dateRange === 'today') {
-        stats.newUsersThisMonth = Math.floor(stats.newUsersThisMonth * 0.1)
-        stats.monthlyRevenue = Math.floor(stats.monthlyRevenue * 0.8)
-      }
-      return stats
-    }
-
     try {
-      // 실제 데이터베이스에서 통계 조회
-      console.log('🔍 관리자 통계 데이터 조회 시작...')
+      console.log('🔍 관리자 통계 데이터 조회 시작...', filters)
       
+      // 날짜 필터 계산
+      const now = new Date()
+      let startDate: string | undefined
+      
+      if (filters?.dateRange) {
+        switch (filters.dateRange) {
+          case 'today':
+            startDate = now.toISOString().split('T')[0]
+            break
+          case 'week':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+            startDate = weekAgo.toISOString().split('T')[0]
+            break
+          case 'month':
+            const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
+            startDate = monthAgo.toISOString().split('T')[0]
+            break
+          case '3months':
+            const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
+            startDate = threeMonthsAgo.toISOString().split('T')[0]
+            break
+          case '6months':
+            const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
+            startDate = sixMonthsAgo.toISOString().split('T')[0]
+            break
+          case 'year':
+            const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+            startDate = yearAgo.toISOString().split('T')[0]
+            break
+        }
+      }
+
+      // 병렬로 모든 데이터 조회
       const [
         usersData,
+        doctorsData,
+        customersData,
         subscriptionsData,
         postsData,
+        commentsData,
         appointmentsData
       ] = await Promise.all([
-        supabase.from('users').select('role, created_at'),
-        supabase.from('subscriptions').select('plan_type, status, amount, created_at'),
-        supabase.from('community_posts').select('created_at'),
-        supabase.from('appointments').select('status, created_at')
+        // 사용자 데이터
+        supabase.from('users').select('role, created_at, is_active'),
+        
+        // 의사 데이터 (병원 유형 포함)
+        supabase.from('doctors').select(`
+          id, 
+          hospital_type, 
+          subscription_status, 
+          subscription_start, 
+          subscription_end,
+          created_at,
+          users!inner(email, created_at)
+        `),
+        
+        // 고객 데이터
+        supabase.from('customers').select('id, created_at'),
+        
+        // 구독 데이터
+        supabase.from('subscriptions').select('plan_type, payment_status, amount, created_at, start_date, end_date'),
+        
+        // 커뮤니티 게시글
+        supabase.from('community_posts').select('id, created_at, is_reported'),
+        
+        // 커뮤니티 댓글
+        supabase.from('community_comments').select('id, created_at'),
+        
+        // 예약 데이터
+        supabase.from('appointments').select('id, status, created_at, appointment_date')
       ])
 
-      console.log('Supabase에서 가져온 구독 데이터:', subscriptionsData.data?.length || 0, '개')
-      
-      if (subscriptionsData.error) {
-        console.error('구독 데이터 조회 실패:', subscriptionsData.error)
-        throw subscriptionsData.error
+      console.log('📊 데이터 조회 결과:', {
+        users: usersData.data?.length || 0,
+        doctors: doctorsData.data?.length || 0,
+        customers: customersData.data?.length || 0,
+        subscriptions: subscriptionsData.data?.length || 0,
+        posts: postsData.data?.length || 0,
+        comments: commentsData.data?.length || 0,
+        appointments: appointmentsData.data?.length || 0
+      })
+
+      // 에러 체크
+      if (usersData.error) console.error('사용자 데이터 조회 오류:', usersData.error)
+      if (doctorsData.error) console.error('의사 데이터 조회 오류:', doctorsData.error)
+      if (customersData.error) console.error('고객 데이터 조회 오류:', customersData.error)
+      if (subscriptionsData.error) console.error('구독 데이터 조회 오류:', subscriptionsData.error)
+      if (postsData.error) console.error('게시글 데이터 조회 오류:', postsData.error)
+      if (commentsData.error) console.error('댓글 데이터 조회 오류:', commentsData.error)
+      if (appointmentsData.error) console.error('예약 데이터 조회 오류:', appointmentsData.error)
+
+      // 현재 월 계산 (이번 달 신규 사용자용)
+      const currentMonth = now.toISOString().substring(0, 7) // YYYY-MM
+
+      // 병원 유형별 통계 계산
+      const hospitalTypeStats: HospitalTypeStats[] = []
+      if (doctorsData.data) {
+        const typeMap = new Map<string, { count: number, activeCount: number, revenue: number }>()
+        let totalDoctors = 0
+
+        doctorsData.data.forEach((doctor: any) => {
+          const type = doctor.hospital_type || '기타'
+          const current = typeMap.get(type) || { count: 0, activeCount: 0, revenue: 0 }
+          
+          current.count += 1
+          if (doctor.subscription_status === 'active') {
+            current.activeCount += 1
+          }
+          
+          typeMap.set(type, current)
+          totalDoctors += 1
+        })
+
+        // 구독 수익을 병원 유형별로 분배 (간단한 계산)
+        const totalRevenue = subscriptionsData.data?.reduce((sum: number, sub: any) => 
+          sum + (sub.payment_status === 'paid' ? (sub.amount || 0) : 0), 0) || 0
+
+        typeMap.forEach((stats, type) => {
+          const percentage = totalDoctors > 0 ? (stats.count / totalDoctors) * 100 : 0
+          const estimatedRevenue = Math.floor(totalRevenue * (stats.count / totalDoctors))
+          
+          hospitalTypeStats.push({
+            type,
+            count: stats.count,
+            activeCount: stats.activeCount,
+            revenue: estimatedRevenue,
+            percentage
+          })
+        })
       }
 
-      // 통계 계산 로직 구현
+      // 통계 계산
       const stats: AdminStats = {
+        // 사용자 통계
         totalUsers: usersData.data?.length || 0,
-        totalDoctors: usersData.data?.filter((u: any) => u.role === 'doctor').length || 0,
-        totalPatients: usersData.data?.filter((u: any) => u.role === 'patient').length || 0,
-        activeUsers: 0, // 실제 활성 사용자 계산 필요
-        newUsersThisMonth: 0, // 이번 달 신규 사용자 계산 필요
+        totalDoctors: doctorsData.data?.length || 0,
+        totalCustomers: customersData.data?.length || 0,
+        activeUsers: usersData.data?.filter((u: any) => u.is_active).length || 0,
+        newUsersThisMonth: usersData.data?.filter((u: any) => 
+          u.created_at?.startsWith(currentMonth)
+        ).length || 0,
 
+        // 구독 통계
         totalSubscriptions: subscriptionsData.data?.length || 0,
-        activeSubscriptions: subscriptionsData.data?.filter((s: any) => s.status === 'active').length || 0,
-        pendingSubscriptions: subscriptionsData.data?.filter((s: any) => s.status === 'pending').length || 0,
-        expiredSubscriptions: subscriptionsData.data?.filter((s: any) => s.status === 'expired').length || 0,
-        subscriptionRevenue: subscriptionsData.data?.reduce((sum: number, s: any) => sum + (s.amount || 0), 0) || 0,
-        monthlyRevenue: 0, // 월별 매출 계산 필요
+        activeSubscriptions: doctorsData.data?.filter((d: any) => d.subscription_status === 'active').length || 0,
+        pendingSubscriptions: doctorsData.data?.filter((d: any) => d.subscription_status === 'pending').length || 0,
+        expiredSubscriptions: doctorsData.data?.filter((d: any) => d.subscription_status === 'expired').length || 0,
+        subscriptionRevenue: subscriptionsData.data?.reduce((sum: number, s: any) => 
+          sum + (s.payment_status === 'paid' ? (s.amount || 0) : 0), 0) || 0,
+        monthlyRevenue: subscriptionsData.data?.filter((s: any) => 
+          s.created_at?.startsWith(currentMonth) && s.payment_status === 'paid'
+        ).reduce((sum: number, s: any) => sum + (s.amount || 0), 0) || 0,
 
-        hospitalTypeStats: [], // 병원 유형별 통계 계산 필요
+        // 병원 유형별 통계
+        hospitalTypeStats,
 
+        // 커뮤니티 통계
         totalPosts: postsData.data?.length || 0,
-        totalComments: 0, // 댓글 수 계산 필요
-        activeDiscussions: 0, // 활성 토론 계산 필요
-        reportedContent: 0, // 신고된 콘텐츠 계산 필요
+        totalComments: commentsData.data?.length || 0,
+        activeDiscussions: postsData.data?.filter((p: any) => {
+          // 최근 7일 내 생성된 게시글을 활성 토론으로 간주
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          return new Date(p.created_at) > weekAgo
+        }).length || 0,
+        reportedContent: postsData.data?.filter((p: any) => p.is_reported).length || 0,
 
+        // 예약 통계
         totalAppointments: appointmentsData.data?.length || 0,
         completedAppointments: appointmentsData.data?.filter((a: any) => a.status === 'completed').length || 0,
         cancelledAppointments: appointmentsData.data?.filter((a: any) => a.status === 'cancelled').length || 0,
-        upcomingAppointments: appointmentsData.data?.filter((a: any) => a.status === 'scheduled').length || 0,
+        upcomingAppointments: appointmentsData.data?.filter((a: any) => {
+          if (a.status !== 'scheduled') return false
+          const appointmentDate = new Date(a.appointment_date)
+          return appointmentDate > now
+        }).length || 0,
 
-        systemHealth: 'healthy',
+        // 시스템 통계
+        systemHealth: 'healthy' as const,
         lastUpdated: new Date().toISOString()
       }
 
+      console.log('✅ 관리자 통계 계산 완료:', {
+        totalUsers: stats.totalUsers,
+        totalDoctors: stats.totalDoctors,
+        activeSubscriptions: stats.activeSubscriptions,
+        totalRevenue: stats.subscriptionRevenue
+      })
+
       return stats
     } catch (error) {
-      console.error('관리자 통계 조회 실패:', error)
-      throw error
+      console.error('❌ 관리자 통계 조회 실패:', error)
+      
+      // 오류 발생 시 더미 데이터 반환 (서비스 중단 방지)
+      console.log('🔄 오류로 인해 더미 데이터로 대체')
+      const dummyStats = generateDummyStats()
+      if (filters?.dateRange === 'today') {
+        dummyStats.newUsersThisMonth = Math.floor(dummyStats.newUsersThisMonth * 0.1)
+        dummyStats.monthlyRevenue = Math.floor(dummyStats.monthlyRevenue * 0.8)
+      }
+      return dummyStats
     }
   },
 

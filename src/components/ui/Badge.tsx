@@ -1,45 +1,39 @@
+'use client'
 import React from 'react'
+import { cn } from '@/lib/utils'
 
-interface BadgeProps {
+interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  variant?: 'default' | 'secondary' | 'destructive' | 'outline'
   children: React.ReactNode
-  variant?: 'primary' | 'success' | 'warning' | 'danger' | 'gray' | 'health'
-  size?: 'sm' | 'md' | 'lg'
-  className?: string
 }
 
-export default function Badge({ 
-  children, 
-  variant = 'gray', 
-  size = 'md',
-  className = '' 
-}: BadgeProps) {
-  const baseClasses = 'badge'
+const Badge: React.FC<BadgeProps> = ({
+  variant = 'default',
+  className,
+  children,
+  ...props
+}) => {
+  const baseClasses = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors'
   
   const variantClasses = {
-    primary: 'badge-primary',
-    success: 'badge-success',
-    warning: 'badge-warning',
-    danger: 'badge-danger',
-    gray: 'badge-gray',
-    health: 'health-badge'
+    default: 'bg-slate-800 text-white',
+    secondary: 'bg-slate-100 text-slate-800',
+    destructive: 'bg-red-100 text-red-800',
+    outline: 'border border-slate-200 text-slate-700'
   }
-  
-  const sizeClasses = {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-2.5 py-0.5 text-xs',
-    lg: 'px-3 py-1 text-sm'
-  }
-  
-  const classes = [
-    baseClasses,
-    variantClasses[variant],
-    sizeClasses[size],
-    className
-  ].filter(Boolean).join(' ')
-  
+
   return (
-    <span className={classes}>
+    <span
+      className={cn(
+        baseClasses,
+        variantClasses[variant],
+        className
+      )}
+      {...props}
+    >
       {children}
     </span>
   )
 }
+
+export default Badge

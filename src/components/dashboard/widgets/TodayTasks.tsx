@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { CheckCircle, Clock, AlertCircle, Plus, MoreVertical, X, Save, Edit2, Check } from 'lucide-react'
+// dashboardDataService removed - using local state management
 
 interface Task {
   id: number
@@ -26,8 +27,6 @@ interface EditingTask extends Task {
 }
 
 export default function TodayTasks() {
-  // useDensity 임시 제거 (DensityProvider 오류 방지)
-  // const { density, getDensityClass } = useDensity()
   // TODO: Fetch real data from API
   const [tasks, setTasks] = useState<Task[]>([
     { id: 1, title: '김철수 고객 상담', time: '10:00', status: 'completed', patient: '김철수', type: '상담' },
@@ -47,11 +46,21 @@ export default function TodayTasks() {
   })
 
   const toggleTaskStatus = (taskId: number) => {
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+
+    const newStatus = task.status === 'completed' ? 'pending' : 'completed'
+    
     setTasks(prev => prev.map(task => 
       task.id === taskId 
-        ? { ...task, status: task.status === 'completed' ? 'pending' : 'completed' }
+        ? { ...task, status: newStatus }
         : task
     ))
+
+    // 작업 완료 시 활동 추가 (로컬 상태로 관리)
+    if (newStatus === 'completed' && task.patient) {
+      console.log(`작업 완료: ${task.title} - ${task.patient}`)
+    }
   }
 
   const addTask = () => {

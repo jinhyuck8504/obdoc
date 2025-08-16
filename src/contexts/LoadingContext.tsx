@@ -1,53 +1,32 @@
 'use client'
-import React, { createContext, useContext, useState, useCallback } from 'react'
-
-interface LoadingState {
-  isLoading: boolean
-  message?: string
-  progress?: number
-  cancelable?: boolean
-  onCancel?: () => void
-}
+import React, { createContext, useContext, useState } from 'react'
 
 interface LoadingContextType {
-  loading: Record<string, LoadingState>
-  setLoading: (key: string, state: LoadingState) => void
-  clearLoading: (key: string) => void
-  isLoading: (key?: string) => boolean
+  isLoading: boolean
+  setLoading: (loading: boolean) => void
+  loadingMessage?: string
+  setLoadingMessage: (message?: string) => void
 }
 
 const LoadingContext = createContext<LoadingContextType | undefined>(undefined)
 
 export function LoadingProvider({ children }: { children: React.ReactNode }) {
-  const [loading, setLoadingState] = useState<Record<string, LoadingState>>({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState<string>()
 
-  const setLoading = useCallback((key: string, state: LoadingState) => {
-    setLoadingState(prev => ({
-      ...prev,
-      [key]: state
-    }))
-  }, [])
-
-  const clearLoading = useCallback((key: string) => {
-    setLoadingState(prev => {
-      const { [key]: removed, ...rest } = prev
-      return rest
-    })
-  }, [])
-
-  const isLoading = useCallback((key?: string) => {
-    if (key) {
-      return !!loading[key]?.isLoading
+  const setLoading = (loading: boolean) => {
+    setIsLoading(loading)
+    if (!loading) {
+      setLoadingMessage(undefined)
     }
-    return Object.values(loading).some(state => state.isLoading)
-  }, [loading])
+  }
 
   return (
     <LoadingContext.Provider value={{
-      loading,
+      isLoading,
       setLoading,
-      clearLoading,
-      isLoading
+      loadingMessage,
+      setLoadingMessage
     }}>
       {children}
     </LoadingContext.Provider>
@@ -56,7 +35,7 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
 
 export function useLoading() {
   const context = useContext(LoadingContext)
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useLoading must be used within a LoadingProvider')
   }
   return context

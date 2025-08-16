@@ -155,7 +155,7 @@ export default function AppointmentList({
       {/* 테이블 헤더 */}
       <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
         <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
-          <div className="col-span-3">환자 정보</div>
+          <div className="col-span-3">고객 정보</div>
           <div className="col-span-2">예약 일시</div>
           <div className="col-span-2">유형 및 장소</div>
           <div className="col-span-2">상태</div>
@@ -179,7 +179,7 @@ export default function AppointmentList({
               onClick={() => onSelectAppointment(appointment)}
             >
               <div className="grid grid-cols-12 gap-4 items-center">
-                {/* 환자 정보 */}
+                {/* 고객 정보 */}
                 <div className="col-span-3">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">

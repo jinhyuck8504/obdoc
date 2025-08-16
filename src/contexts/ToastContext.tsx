@@ -1,45 +1,43 @@
 'use client'
 import React, { createContext, useContext, useState, useCallback } from 'react'
-import { ToastProps } from '@/components/common/Toast'
+
+interface Toast {
+  id: string
+  message: string
+  type: 'success' | 'error' | 'warning' | 'info'
+  duration?: number
+}
 
 interface ToastContextType {
-  toasts: ToastProps[]
-  showToast: (toast: Omit<ToastProps, 'id' | 'onClose'>) => void
-  hideToast: (id: string) => void
-  clearAllToasts: () => void
+  toasts: Toast[]
+  addToast: (message: string, type?: Toast['type'], duration?: number) => void
+  removeToast: (id: string) => void
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = useState<ToastProps[]>([])
+  const [toasts, setToasts] = useState<Toast[]>([])
 
-  const showToast = useCallback((toast: Omit<ToastProps, 'id' | 'onClose'>) => {
-    const id = `toast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    const newToast: ToastProps = {
-      ...toast,
-      id,
-      onClose: hideToast
-    }
+  const addToast = useCallback((message: string, type: Toast['type'] = 'info', duration = 5000) => {
+    const id = Math.random().toString(36).substr(2, 9)
+    const toast: Toast = { id, message, type, duration }
     
-    setToasts(prev => [newToast, ...prev.slice(0, 4)]) // 최대 5개 유지
+    setToasts(prev => [...prev, toast])
+    
+    if (duration > 0) {
+      setTimeout(() => {
+        removeToast(id)
+      }, duration)
+    }
   }, [])
 
-  const hideToast = useCallback((id: string) => {
+  const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }, [])
 
-  const clearAllToasts = useCallback(() => {
-    setToasts([])
-  }, [])
-
   return (
-    <ToastContext.Provider value={{
-      toasts,
-      showToast,
-      hideToast,
-      clearAllToasts
-    }}>
+    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
     </ToastContext.Provider>
   )
@@ -47,7 +45,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 export function useToast() {
   const context = useContext(ToastContext)
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useToast must be used within a ToastProvider')
   }
   return context

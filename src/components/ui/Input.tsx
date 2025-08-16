@@ -9,7 +9,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   rightIcon?: React.ReactNode
 }
 
-export default function Input({
+function Input({
   label,
   error,
   success,
@@ -85,3 +85,7 @@ export default function Input({
     </div>
   )
 }
+
+// Export both named and default for compatibility
+export { Input }
+export default Input

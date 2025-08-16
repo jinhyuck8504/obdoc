@@ -77,7 +77,7 @@ export interface Announcement {
   content: string
   type: 'info' | 'warning' | 'success' | 'error'
   priority: 'low' | 'medium' | 'high'
-  targetAudience: 'all' | 'patients' | 'doctors'
+  targetAudience: 'all' | 'customers' | 'doctors'
   isActive: boolean
   publishedAt?: string
   expiresAt?: string
@@ -92,6 +92,6 @@ export interface AnnouncementFormData {
   content: string
   type: 'info' | 'warning' | 'success' | 'error'
   priority: 'low' | 'medium' | 'high'
-  targetAudience: 'all' | 'patients' | 'doctors'
+  targetAudience: 'all' | 'customers' | 'doctors'
   expiresAt?: string
 }

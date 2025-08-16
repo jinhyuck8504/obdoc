@@ -18,11 +18,11 @@ interface Appointment {
 
 export default function Calendar() {
   const router = useRouter()
-  // useDensity 임시 제거 (DensityProvider 오류 방지)
-  // const { density, getDensityClass } = useDensity()
+  // Calendar component with local state management
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
 
   // TODO: Fetch real appointments from API
   const appointments: Appointment[] = [
@@ -115,6 +115,21 @@ export default function Calendar() {
     return appointments.filter(apt => apt.date === today)
   }
 
+  const getSelectedDateAppointments = () => {
+    if (!selectedDate) return []
+    const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`
+    return appointments.filter(apt => apt.date === dateStr)
+  }
+
+  const handleAppointmentClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment)
+  }
+
+  const navigateToAppointments = async () => {
+    // 헤더 중복 없이 예약 관리 페이지로 이동
+    router.push('/dashboard/doctor/appointments')
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -179,9 +194,7 @@ export default function Calendar() {
           </button>
 
           <AsyncButton
-            onClick={async () => {
-              router.push('/dashboard/doctor/appointments')
-            }}
+            onClick={navigateToAppointments}
             className="ml-2 px-2.5 py-1.5 text-xs"
             variant="primary"
             size="sm"
@@ -190,7 +203,7 @@ export default function Calendar() {
             showErrorInline={false}
           >
             <Plus className="w-3 h-3 mr-1" />
-            예약
+            예약 관리
           </AsyncButton>
         </div>
       </div>
@@ -233,59 +246,182 @@ export default function Calendar() {
         </div>
       </div>
 
-      {/* 오늘의 예약 - 간소화된 버전 */}
+      {/* 선택된 날짜 또는 오늘의 예약 */}
       <div className="pt-3 border-t border-gray-100">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium text-gray-900">오늘 예약</h3>
+          <h3 className="text-sm font-medium text-gray-900">
+            {selectedDate ? `${selectedDate}일 예약` : '오늘 예약'}
+          </h3>
           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-            {todayAppointments.length}건
+            {selectedDate ? getSelectedDateAppointments().length : todayAppointments.length}건
           </span>
         </div>
 
-        {todayAppointments.length === 0 ? (
-          <div className="text-center py-3">
-            <p className="text-xs text-gray-500">예약이 없습니다</p>
-          </div>
-        ) : (
-          <div className="space-y-1.5 max-h-32 overflow-y-auto">
-            {todayAppointments.slice(0, 3).map(apt => (
-              <div key={apt.id} className="flex items-center justify-between bg-gray-50 rounded-md hover:bg-gray-100 transition-colors p-2">
-                <div className="flex items-center space-x-2 min-w-0 flex-1">
-                  <div className="flex-shrink-0">
-                    <div className={`w-2 h-2 rounded-full ${apt.status === 'completed' ? 'bg-green-500' :
-                        apt.status === 'cancelled' ? 'bg-red-500' : 'bg-blue-500'
-                      }`}></div>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center space-x-1">
-                      <span className="text-xs font-medium text-gray-900">{apt.time}</span>
-                      <span className="text-xs text-gray-600 truncate">{apt.patient}</span>
+        {(() => {
+          const displayAppointments = selectedDate ? getSelectedDateAppointments() : todayAppointments
+          
+          if (displayAppointments.length === 0) {
+            return (
+              <div className="text-center py-3">
+                <p className="text-xs text-gray-500">예약이 없습니다</p>
+                {selectedDate && (
+                  <button
+                    onClick={() => setSelectedDate(null)}
+                    className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                  >
+                    오늘 예약 보기
+                  </button>
+                )}
+              </div>
+            )
+          }
+
+          return (
+            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+              {displayAppointments.slice(0, 3).map(apt => (
+                <div 
+                  key={apt.id} 
+                  onClick={() => handleAppointmentClick(apt)}
+                  className="flex items-center justify-between bg-gray-50 rounded-md hover:bg-gray-100 transition-colors p-2 cursor-pointer"
+                >
+                  <div className="flex items-center space-x-2 min-w-0 flex-1">
+                    <div className="flex-shrink-0">
+                      <div className={`w-2 h-2 rounded-full ${apt.status === 'completed' ? 'bg-green-500' :
+                          apt.status === 'cancelled' ? 'bg-red-500' : 'bg-blue-500'
+                        }`}></div>
                     </div>
-                    <p className="text-xs text-gray-500 truncate">{apt.type}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center space-x-1">
+                        <span className="text-xs font-medium text-gray-900">{apt.time}</span>
+                        <span className="text-xs text-gray-600 truncate">{apt.patient}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <p className="text-xs text-gray-500 truncate">{apt.type}</p>
+                        {apt.location && (
+                          <>
+                            <span className="text-xs text-gray-400">•</span>
+                            <p className="text-xs text-gray-400 truncate">{apt.location}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${getStatusColor(apt.status)}`}>
+                    {getStatusText(apt.status)}
+                  </span>
+                </div>
+              ))}
+              {displayAppointments.length > 3 && (
+                <div className="text-center">
+                  <AsyncButton
+                    onClick={navigateToAppointments}
+                    className="text-xs"
+                    variant="ghost"
+                    size="sm"
+                    timeout={5000}
+                    preventDoubleClick={true}
+                    showErrorInline={false}
+                  >
+                    +{displayAppointments.length - 3}개 더 보기
+                  </AsyncButton>
+                </div>
+              )}
+            </div>
+          )
+        })()}
+      </div>
+
+      {/* 예약 상세 정보 모달 */}
+      {selectedAppointment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedAppointment(null)}>
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">예약 상세 정보</h3>
+              <button
+                onClick={() => setSelectedAppointment(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <User className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{selectedAppointment.patient}</p>
+                  <p className="text-xs text-gray-500">고객</p>
                 </div>
               </div>
-            ))}
-            {todayAppointments.length > 3 && (
-              <div className="text-center">
-                <AsyncButton
-                  onClick={async () => {
-                    router.push('/dashboard/doctor/appointments')
-                  }}
-                  className="text-xs"
-                  variant="ghost"
-                  size="sm"
-                  timeout={5000}
-                  preventDoubleClick={true}
-                  showErrorInline={false}
-                >
-                  +{todayAppointments.length - 3}개 더 보기
-                </AsyncButton>
+
+              <div className="flex items-center space-x-3">
+                <Clock className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {selectedAppointment.date} {selectedAppointment.time}
+                  </p>
+                  <p className="text-xs text-gray-500">예약 시간</p>
+                </div>
               </div>
-            )}
+
+              <div className="flex items-center space-x-3">
+                <CalendarIcon className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{selectedAppointment.type}</p>
+                  <p className="text-xs text-gray-500">예약 유형</p>
+                </div>
+              </div>
+
+              {selectedAppointment.location && (
+                <div className="flex items-center space-x-3">
+                  <MapPin className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{selectedAppointment.location}</p>
+                    <p className="text-xs text-gray-500">장소</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center space-x-3">
+                <div className={`w-3 h-3 rounded-full ${selectedAppointment.status === 'completed' ? 'bg-green-500' :
+                    selectedAppointment.status === 'cancelled' ? 'bg-red-500' : 'bg-blue-500'
+                  }`}></div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{getStatusText(selectedAppointment.status)}</p>
+                  <p className="text-xs text-gray-500">상태</p>
+                </div>
+              </div>
+
+              {selectedAppointment.notes && (
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 mb-1">메모</p>
+                  <p className="text-sm text-gray-900">{selectedAppointment.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <AsyncButton
+                onClick={navigateToAppointments}
+                className="flex-1"
+                variant="primary"
+                size="sm"
+                timeout={5000}
+                preventDoubleClick={true}
+                showErrorInline={false}
+              >
+                예약 관리로 이동
+              </AsyncButton>
+              <button
+                onClick={() => setSelectedAppointment(null)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              >
+                닫기
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

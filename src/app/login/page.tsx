@@ -1,93 +1,168 @@
 'use client'
-
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, UserPlus } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/contexts/ToastContext'
 import Logo from '@/components/common/Logo'
-import LoginForm from '@/components/auth/LoginForm'
-import PasswordResetForm from '@/components/auth/PasswordResetForm'
+import Button from '@/components/ui/Button'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 export default function LoginPage() {
-  const [showPasswordReset, setShowPasswordReset] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const { signIn } = useAuth()
+  const { addToast } = useToast()
+  const router = useRouter()
 
-  if (showPasswordReset) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-slate-100">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23e2e8f0%22%20fill-opacity%3D%220.4%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%221.5%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
-        
-        <div className="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-          <div className="w-full max-w-md">
-            <PasswordResetForm onBack={() => setShowPasswordReset(false)} />
-          </div>
-        </div>
-      </div>
-    )
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!email || !password) {
+      addToast('이메일과 비밀번호를 입력해주세요.', 'error')
+      return
+    }
+
+    setIsLoading(true)
+    
+    try {
+      const { error } = await signIn(email, password)
+      
+      if (error) {
+        addToast(error.message || '로그인에 실패했습니다.', 'error')
+      } else {
+        addToast('로그인되었습니다.', 'success')
+        // AuthContext에서 자동 리다이렉트가 처리되므로 여기서는 제거
+        // 만약 자동 리다이렉트가 안 되면 수동으로 처리
+        setTimeout(() => {
+          const currentPath = window.location.pathname
+          if (currentPath === '/login') {
+            // 여전히 로그인 페이지에 있으면 강제로 홈으로 이동
+            router.push('/')
+          }
+        }, 1000)
+      }
+    } catch (error) {
+      addToast('로그인 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-slate-100">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23e2e8f0%22%20fill-opacity%3D%220.4%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%221.5%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
-      
-      <div className="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="mb-6">
-              <Logo size="lg" showText={true} showSlogan={false} href="/" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              다시 오신 것을 환영합니다
-            </h1>
-            <p className="text-gray-600">
-              Obdoc 계정으로 로그인하세요
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <Logo size="lg" showText={true} />
           </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            로그인
+          </h2>
+          <p className="text-gray-600">
+            Obdoc 계정으로 로그인하세요
+          </p>
+        </div>
 
-          {/* Login Form Card */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
-            <LoginForm />
-            
-            {/* Additional Actions */}
-            <div className="mt-6 space-y-4">
-              <div className="text-center">
+        {/* Login Form */}
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                이메일
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors"
+                  placeholder="이메일을 입력하세요"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                비밀번호
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors"
+                  placeholder="비밀번호를 입력하세요"
+                  required
+                />
                 <button
-                  onClick={() => setShowPasswordReset(true)}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
-                  비밀번호를 잊으셨나요?
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  )}
                 </button>
               </div>
-              
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">또는</span>
-                </div>
-              </div>
-              
-              <Link
-                href="/signup"
-                className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-              >
-                <UserPlus className="h-5 w-5 mr-2" />
-                새 계정 만들기
-              </Link>
             </div>
-          </div>
 
-          {/* Back to Home */}
-          <div className="text-center mt-6">
-            <Link
-              href="/"
-              className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full flex items-center justify-center"
+              size="lg"
+              disabled={isLoading}
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              홈으로 돌아가기
-            </Link>
+              {isLoading ? (
+                <LoadingSpinner size="sm" />
+              ) : (
+                <>
+                  로그인
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          {/* Footer Links */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              아직 계정이 없으신가요?{' '}
+              <Link 
+                href="/signup" 
+                className="font-medium text-slate-600 hover:text-slate-800 transition-colors"
+              >
+                회원가입
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        {/* Service Info */}
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-slate-800 mb-2">서비스 문의</h3>
+          <div className="text-xs text-slate-700 space-y-1">
+            <p>계정 생성 및 서비스 이용 문의</p>
+            <p>📧 brandnewmedi@naver.com</p>
           </div>
         </div>
       </div>

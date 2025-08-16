@@ -1,68 +1,93 @@
-export interface CommunityPost {
+/**
+ * 커뮤니티 관련 타입 정의
+ */
+
+export interface Post {
   id: string
+  authorId: string
   title: string
   content: string
-  authorId: string
-  authorNickname: string
-  category: PostCategory
-  tags: string[]
-  imageUrl?: string
-  likes: number
+  category: 'general' | 'diet' | 'exercise' | 'success' | 'question'
+  isAnonymous: boolean
+  anonymousNickname?: string
+  status: 'active' | 'hidden' | 'deleted'
+  viewCount: number
+  likeCount: number
   commentCount: number
-  isLiked?: boolean
   createdAt: string
   updatedAt: string
+  
+  // 관계 데이터
+  author?: {
+    id: string
+    name: string
+    role: 'doctor' | 'customer'
+  }
+  comments?: Comment[]
+  isLiked?: boolean
 }
 
-export interface CommunityComment {
+export interface Comment {
   id: string
   postId: string
-  content: string
   authorId: string
-  authorNickname: string
-  likes: number
-  isLiked?: boolean
+  content: string
+  isAnonymous: boolean
+  anonymousNickname?: string
+  status: 'active' | 'hidden' | 'deleted'
+  likeCount: number
   createdAt: string
   updatedAt: string
+  
+  // 관계 데이터
+  author?: {
+    id: string
+    name: string
+    role: 'doctor' | 'customer'
+  }
+  isLiked?: boolean
 }
 
-export type PostCategory = 
-  | 'success-story'    // 성공후기
-  | 'diet-tips'        // 식단팁
-  | 'exercise-tips'    // 운동팁
-  | 'motivation'       // 동기부여
-  | 'question'         // 질문
-  | 'general'          // 일반
-
-export interface PostFormData {
+export interface CreatePostRequest {
   title: string
   content: string
-  category: PostCategory
-  tags: string[]
-  image?: File
+  category: Post['category']
+  isAnonymous: boolean
 }
 
-export interface CommentFormData {
+export interface UpdatePostRequest {
+  title?: string
+  content?: string
+  category?: Post['category']
+}
+
+export interface CreateCommentRequest {
+  postId: string
   content: string
+  isAnonymous: boolean
 }
 
 export interface PostFilters {
-  category?: PostCategory
-  tags?: string[]
+  category?: Post['category']
+  authorId?: string
   search?: string
-  sortBy?: 'latest' | 'popular' | 'most-liked'
+  status?: Post['status']
 }
 
-export const POST_CATEGORIES: { value: PostCategory; label: string; color: string }[] = [
-  { value: 'success-story', label: '성공후기', color: 'bg-green-100 text-green-800' },
-  { value: 'diet-tips', label: '식단팁', color: 'bg-blue-100 text-blue-800' },
-  { value: 'exercise-tips', label: '운동팁', color: 'bg-purple-100 text-purple-800' },
-  { value: 'motivation', label: '동기부여', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'question', label: '질문', color: 'bg-orange-100 text-orange-800' },
-  { value: 'general', label: '일반', color: 'bg-gray-100 text-gray-800' }
-]
-
-export const POPULAR_TAGS = [
-  '다이어트', '운동', '식단', '체중감량', '건강', '동기부여', 
-  '성공후기', '팁', '질문', '도움', '상담', '경험담'
-]
+export interface Report {
+  id: string
+  reporterId: string
+  targetType: 'post' | 'comment'
+  targetId: string
+  reason: 'spam' | 'inappropriate' | 'harassment' | 'misinformation' | 'other'
+  description?: string
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed'
+  createdAt: string
+  
+  // 관계 데이터
+  reporter?: {
+    id: string
+    name: string
+  }
+  target?: Post | Comment
+}
