@@ -1,33 +1,160 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { Users, Building, BarChart3, AlertTriangle, CheckCircle, Clock, DollarSign, Activity } from 'lucide-react'
+import { Users, Building, BarChart3, AlertTriangle, CheckCircle, Clock, DollarSign, Activity, RefreshCw } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { Card, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import { useToast } from '@/hooks/use-toast'
 
+// 타입 정의
+interface PendingApproval {
+  id: string
+  hospital_name: string
+  owner_name: string
+  email: string
+  hospital_type: string
+  subscription_plan: string
+  created_at: string
+}
+
+interface AdminStats {
+  total_hospitals: number
+  total_users: number
+  monthly_revenue: number
+  active_sessions: number
+  pending_approvals: number
+  recent_activity: number
+}
+
+interface ActivityLog {
+  id: string
+  action: string
+  description: string
+  admin_email: string
+  created_at: string
+  time_ago: string
+  metadata?: any
+}
+
 export default function AdminDashboardPage() {
   const { user } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
+  
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [stats, setStats] = useState<AdminStats>({
+    total_hospitals: 0,
+    total_users: 0,
+    monthly_revenue: 0,
+    active_sessions: 0,
+    pending_approvals: 0,
+    recent_activity: 0
+  })
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([])
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
 
-  const handleApproval = async (hospitalName: string, action: 'approve' | 'reject') => {
+  // 데이터 로딩 함수들
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/admin/stats/overview')
+      const result = await response.json()
+      
+      if (result.success) {
+        setStats(result.data)
+      } else {
+        console.error('통계 데이터 로딩 실패:', result.error)
+      }
+    } catch (error) {
+      console.error('통계 데이터 로딩 오류:', error)
+    }
+  }
+
+  const fetchPendingApprovals = async () => {
+    try {
+      const response = await fetch('/api/admin/approvals/pending')
+      const result = await response.json()
+      
+      if (result.success) {
+        setPendingApprovals(result.data)
+      } else {
+        console.error('승인 대기 목록 로딩 실패:', result.error)
+      }
+    } catch (error) {
+      console.error('승인 대기 목록 로딩 오류:', error)
+    }
+  }
+
+  const fetchActivityLogs = async () => {
+    try {
+      const response = await fetch('/api/admin/activity-logs?limit=5')
+      const result = await response.json()
+      
+      if (result.success) {
+        setActivityLogs(result.data)
+      } else {
+        console.error('활동 로그 로딩 실패:', result.error)
+      }
+    } catch (error) {
+      console.error('활동 로그 로딩 오류:', error)
+    }
+  }
+
+  // 전체 데이터 새로고침
+  const refreshAllData = async () => {
+    setRefreshing(true)
+    try {
+      await Promise.all([
+        fetchStats(),
+        fetchPendingApprovals(),
+        fetchActivityLogs()
+      ])
+    } catch (error) {
+      console.error('데이터 새로고침 오류:', error)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  // 컴포넌트 마운트 시 데이터 로딩
+  useEffect(() => {
+    refreshAllData()
+  }, [])
+
+  const handleApproval = async (approval: PendingApproval, action: 'approve' | 'reject') => {
     setLoading(true)
     try {
-      // 실제 API 호출 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      toast({
-        title: action === 'approve' ? '승인 완료' : '거절 완료',
-        description: `${hospitalName}의 가입 신청이 ${action === 'approve' ? '승인' : '거절'}되었습니다.`
+      const response = await fetch(`/api/admin/approvals/${approval.id}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        toast({
+          title: action === 'approve' ? '승인 완료' : '거절 완료',
+          description: result.message
+        })
+        
+        // 데이터 새로고침
+        await Promise.all([
+          fetchPendingApprovals(),
+          fetchStats(),
+          fetchActivityLogs()
+        ])
+      } else {
+        throw new Error(result.error || '처리 중 오류가 발생했습니다')
+      }
     } catch (error) {
       toast({
         title: '오류 발생',
-        description: '처리 중 오류가 발생했습니다. 다시 시도해주세요.'
+        description: error instanceof Error ? error.message : '처리 중 오류가 발생했습니다. 다시 시도해주세요.',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
@@ -62,12 +189,25 @@ export default function AdminDashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            관리자 대시보드
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Obdoc 서비스 전체 현황을 관리하세요.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                관리자 대시보드
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Obdoc 서비스 전체 현황을 관리하세요.
+              </p>
+            </div>
+            <Button
+              onClick={refreshAllData}
+              disabled={refreshing}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>새로고침</span>
+            </Button>
+          </div>
         </div>
 
         {/* System Stats */}
@@ -80,7 +220,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">등록 병원</p>
-                  <p className="text-2xl font-bold text-gray-900">47</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.total_hospitals}</p>
                 </div>
               </div>
             </CardBody>
@@ -94,7 +234,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">총 사용자</p>
-                  <p className="text-2xl font-bold text-gray-900">1,234</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.total_users.toLocaleString()}</p>
                 </div>
               </div>
             </CardBody>
@@ -108,7 +248,9 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">월 매출</p>
-                  <p className="text-2xl font-bold text-gray-900">₩9.4M</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ₩{(stats.monthly_revenue / 1000000).toFixed(1)}M
+                  </p>
                 </div>
               </div>
             </CardBody>
@@ -122,7 +264,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">활성 세션</p>
-                  <p className="text-2xl font-bold text-gray-900">89</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.active_sessions}</p>
                 </div>
               </div>
             </CardBody>
@@ -137,101 +279,60 @@ export default function AdminDashboardPage() {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900">승인 대기</h2>
-                  <Badge variant="destructive">3</Badge>
+                  <Badge variant="destructive">{pendingApprovals.length}</Badge>
                 </div>
               </div>
               <CardBody className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <Building className="h-5 w-5 text-yellow-600 mr-2" />
-                        <p className="font-medium text-gray-900">서울 비만클리닉</p>
-                        <Badge className="ml-2" variant="outline">일반의원</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        원장: 김철수 | 이메일: kim@clinic.com | 6개월 플랜
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        disabled={loading}
-                        onClick={() => handleApproval('서울 비만클리닉', 'reject')}
-                      >
-                        거절
-                      </Button>
-                      <Button 
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => handleApproval('서울 비만클리닉', 'approve')}
-                      >
-                        승인
-                      </Button>
-                    </div>
+                {pendingApprovals.length === 0 ? (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                    <p className="text-gray-500">승인 대기 중인 병원이 없습니다</p>
                   </div>
-                  
-                  <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <Building className="h-5 w-5 text-yellow-600 mr-2" />
-                        <p className="font-medium text-gray-900">강남 한의원</p>
-                        <Badge className="ml-2" variant="outline">한의원</Badge>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingApprovals.map((approval) => (
+                      <div key={approval.id} className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center">
+                            <Building className="h-5 w-5 text-yellow-600 mr-2" />
+                            <p className="font-medium text-gray-900">{approval.hospital_name}</p>
+                            <Badge className="ml-2" variant="outline">
+                              {approval.hospital_type === 'clinic' ? '일반의원' :
+                               approval.hospital_type === 'korean_medicine' ? '한의원' : '병원'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            원장: {approval.owner_name} | 이메일: {approval.email} | {
+                              approval.subscription_plan === '1month' ? '1개월 플랜' :
+                              approval.subscription_plan === '6months' ? '6개월 플랜' :
+                              approval.subscription_plan === '12months' ? '12개월 플랜' : approval.subscription_plan
+                            }
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            신청일: {new Date(approval.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            disabled={loading}
+                            onClick={() => handleApproval(approval, 'reject')}
+                          >
+                            거절
+                          </Button>
+                          <Button 
+                            size="sm"
+                            disabled={loading}
+                            onClick={() => handleApproval(approval, 'approve')}
+                          >
+                            승인
+                          </Button>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        원장: 이영희 | 이메일: lee@hanui.com | 12개월 플랜
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        disabled={loading}
-                        onClick={() => handleApproval('강남 한의원', 'reject')}
-                      >
-                        거절
-                      </Button>
-                      <Button 
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => handleApproval('강남 한의원', 'approve')}
-                      >
-                        승인
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                  
-                  <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <Building className="h-5 w-5 text-yellow-600 mr-2" />
-                        <p className="font-medium text-gray-900">부산 종합병원</p>
-                        <Badge className="ml-2" variant="outline">병원</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        원장: 박민수 | 이메일: park@hospital.com | 1개월 플랜
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        disabled={loading}
-                        onClick={() => handleApproval('부산 종합병원', 'reject')}
-                      >
-                        거절
-                      </Button>
-                      <Button 
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => handleApproval('부산 종합병원', 'approve')}
-                      >
-                        승인
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardBody>
             </Card>
 
@@ -363,34 +464,31 @@ export default function AdminDashboardPage() {
                 <h2 className="text-lg font-semibold text-gray-900">최근 활동</h2>
               </div>
               <CardBody className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">새 병원 승인</p>
-                      <p className="text-xs text-gray-500">서울 다이어트 클리닉</p>
-                      <p className="text-xs text-gray-400">1시간 전</p>
-                    </div>
+                {activityLogs.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500">최근 활동이 없습니다</p>
                   </div>
-                  
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">구독 갱신</p>
-                      <p className="text-xs text-gray-500">강남 한의원 - 12개월 플랜</p>
-                      <p className="text-xs text-gray-400">3시간 전</p>
-                    </div>
+                ) : (
+                  <div className="space-y-4">
+                    {activityLogs.map((log) => (
+                      <div key={log.id} className="flex items-start space-x-3">
+                        <div className={`w-2 h-2 rounded-full mt-2 ${
+                          log.action.includes('approve') ? 'bg-green-500' :
+                          log.action.includes('subscription') ? 'bg-blue-500' :
+                          log.action.includes('system') ? 'bg-purple-500' :
+                          'bg-gray-500'
+                        }`}></div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {log.action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </p>
+                          <p className="text-xs text-gray-500">{log.description}</p>
+                          <p className="text-xs text-gray-400">{log.time_ago}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">시스템 업데이트</p>
-                      <p className="text-xs text-gray-500">v1.2.3 배포 완료</p>
-                      <p className="text-xs text-gray-400">6시간 전</p>
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardBody>
             </Card>
           </div>
