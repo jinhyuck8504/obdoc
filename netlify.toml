@@ -9,10 +9,6 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-  
-  [plugins.inputs]
-    # Enable App Router support
-    experimental = { appDir = true }
 
 [dev]
   command = "npm run dev"
