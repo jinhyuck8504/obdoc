@@ -697,3 +697,176 @@ export const getNextHospitalSequence = async (
     return Math.floor(Math.random() * 999) + 1
   }
 }
+
+/**
+ * 코드별 고객 목록 조회
+ */
+export const getCodeCustomers = async (
+  hospitalCode: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<{
+  success: boolean
+  customers?: any[]
+  total?: number
+  error?: string
+}> => {
+  try {
+    const { data: customers, error, count } = await supabase
+      .from('customers')
+      .select('*', { count: 'exact' })
+      .eq('hospital_code', hospitalCode)
+      .order('created_at', { ascending: false })
+      .range((page - 1) * limit, page * limit - 1)
+
+    if (error) {
+      console.error('고객 목록 조회 오류:', error)
+      return { 
+        success: false, 
+        error: '고객 목록 조회 중 오류가 발생했습니다.' 
+      }
+    }
+
+    return { 
+      success: true, 
+      customers: customers || [],
+      total: count || 0
+    }
+
+  } catch (error) {
+    console.error('고객 목록 조회 중 오류:', error)
+    return { 
+      success: false, 
+      error: '고객 목록 조회 중 오류가 발생했습니다.' 
+    }
+  }
+}
+
+/**
+ * 병원 코드 상태 토글
+ */
+export const toggleHospitalCodeStatus = async (
+  hospitalCode: string,
+  isActive: boolean
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { error } = await supabase
+      .from('hospitals')
+      .update({ 
+        is_active: isActive,
+        updated_at: new Date().toISOString()
+      })
+      .eq('hospital_code', hospitalCode)
+
+    if (error) {
+      console.error('병원 코드 상태 변경 오류:', error)
+      return { 
+        success: false, 
+        error: '병원 코드 상태 변경 중 오류가 발생했습니다.' 
+      }
+    }
+
+    return { success: true }
+
+  } catch (error) {
+    console.error('병원 코드 상태 변경 중 오류:', error)
+    return { 
+      success: false, 
+      error: '병원 코드 상태 변경 중 오류가 발생했습니다.' 
+    }
+  }
+}
+
+/**
+ * 의사의 병원 코드 목록 조회
+ */
+export const getDoctorHospitalCodes = async (
+  doctorId: string
+): Promise<{
+  success: boolean
+  hospitalCodes?: any[]
+  error?: string
+}> => {
+  try {
+    const { data: hospitalCodes, error } = await supabase
+      .from('hospitals')
+      .select('*')
+      .eq('created_by', doctorId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('의사 병원 코드 조회 오류:', error)
+      return { 
+        success: false, 
+        error: '병원 코드 조회 중 오류가 발생했습니다.' 
+      }
+    }
+
+    return { 
+      success: true, 
+      hospitalCodes: hospitalCodes || []
+    }
+
+  } catch (error) {
+    console.error('의사 병원 코드 조회 중 오류:', error)
+    return { 
+      success: false, 
+      error: '병원 코드 조회 중 오류가 발생했습니다.' 
+    }
+  }
+}
+
+/**
+ * 병원 코드 생성 (API용)
+ */
+export const createHospitalCode = async (
+  hospitalData: any,
+  doctorId: string
+): Promise<{ success: boolean; hospitalCode?: string; error?: string }> => {
+  try {
+    const result = await generateHospitalCodeForDoctor(
+      hospitalData,
+      doctorId
+    )
+
+    return result
+
+  } catch (error) {
+    console.error('병원 코드 생성 중 오류:', error)
+    return { 
+      success: false, 
+      error: '병원 코드 생성 중 오류가 발생했습니다.' 
+    }
+  }
+}
+
+/**
+ * 병원 코드 검증 (API용)
+ */
+export const verifyHospitalCode = async (
+  hospitalCode: string
+): Promise<{ success: boolean; hospitalData?: any; error?: string }> => {
+  try {
+    const result = await validateHospitalCodeExists(hospitalCode)
+
+    if (result.error) {
+      return { success: false, error: result.error }
+    }
+
+    if (!result.exists) {
+      return { success: false, error: '유효하지 않은 병원 코드입니다.' }
+    }
+
+    return { 
+      success: true, 
+      hospitalData: result.hospitalData 
+    }
+
+  } catch (error) {
+    console.error('병원 코드 검증 중 오류:', error)
+    return { 
+      success: false, 
+      error: '병원 코드 검증 중 오류가 발생했습니다.' 
+    }
+  }
+}

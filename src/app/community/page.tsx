@@ -5,7 +5,7 @@ import BackButton from '@/components/common/BackButton'
 import PostList from '@/components/community/PostList'
 import PostForm from '@/components/community/PostForm'
 import PostDetail from '@/components/community/PostDetail'
-import { CommunityPost, PostFormData } from '@/types/community'
+import { Post, CreatePostRequest } from '@/types/community'
 import { createPost, updatePost } from '@/lib/communityService'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSession } from '@/hooks/useSession'
@@ -13,8 +13,8 @@ import { useSession } from '@/hooks/useSession'
 export default function CommunityPage() {
   const { user } = useAuth()
   const [showPostForm, setShowPostForm] = useState(false)
-  const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null)
-  const [editingPost, setEditingPost] = useState<CommunityPost | null>(null)
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null)
+  const [editingPost, setEditingPost] = useState<Post | null>(null)
   const [showPostDetail, setShowPostDetail] = useState(false)
   const [detailPostId, setDetailPostId] = useState<string | null>(null)
 
@@ -27,14 +27,17 @@ export default function CommunityPage() {
     }
   })
 
-  const handleCreatePost = async (data: PostFormData) => {
+  const handleCreatePost = async (data: CreatePostRequest) => {
     try {
       if (editingPost) {
         // 수정 모드
         await updatePost(editingPost.id, data)
       } else {
         // 생성 모드
-        await createPost(user?.id || 'user1', data)
+        await createPost({
+          ...data,
+          authorId: user?.id || 'user1'
+        })
       }
       // PostList 새로고침 트리거
       setRefreshTrigger(prev => prev + 1)
@@ -44,12 +47,12 @@ export default function CommunityPage() {
     }
   }
 
-  const handlePostClick = (post: CommunityPost) => {
+  const handlePostClick = (post: Post) => {
     setDetailPostId(post.id)
     setShowPostDetail(true)
   }
 
-  const handleEditPost = (post: CommunityPost) => {
+  const handleEditPost = (post: Post) => {
     setEditingPost(post)
     setShowPostForm(true)
   }

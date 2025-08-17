@@ -21,14 +21,12 @@ export default function DoctorDashboardPage() {
       
       toast({
         title: '작업 완료',
-        description: `${taskName} 작업이 완료되었습니다.`,
-        variant: 'default'
+        description: `${taskName} 작업이 완료되었습니다.`
       })
     } catch (error) {
       toast({
         title: '오류 발생',
-        description: '작업 처리 중 오류가 발생했습니다.',
-        variant: 'destructive'
+        description: '작업 처리 중 오류가 발생했습니다.'
       })
     } finally {
       setLoading(false)

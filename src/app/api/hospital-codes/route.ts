@@ -44,11 +44,18 @@ export async function GET(request: NextRequest) {
     }
 
     // 코드 목록 조회
-    const codes = await getDoctorHospitalCodes(doctor.id)
+    const result = await getDoctorHospitalCodes(doctor.id)
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || '코드 조회 중 오류가 발생했습니다.' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
-      codes,
-      total: codes.length
+      codes: result.hospitalCodes || [],
+      total: (result.hospitalCodes || []).length
     })
   } catch (error) {
     console.error('GET /api/hospital-codes error:', error)
@@ -101,7 +108,7 @@ export async function POST(request: NextRequest) {
     const body: CreateCodeRequest = await request.json()
 
     // 코드 생성
-    const newCode = await createHospitalCode(doctor.id, body)
+    const newCode = await createHospitalCode(body, doctor.id)
 
     return NextResponse.json(newCode, { status: 201 })
   } catch (error) {

@@ -19,10 +19,10 @@ import RevenueChart from './widgets/RevenueChart'
 import HospitalTypeChart from './widgets/HospitalTypeChart'
 import UserActivityChart from './widgets/UserActivityChart'
 import ChartErrorBoundary from '../common/ChartErrorBoundary'
-import SupabaseConnectionTest from './SupabaseConnectionTest'
-import AuthenticationTest from './AuthenticationTest'
-import RoleBasedAccessTest from './RoleBasedAccessTest'
-import CRUDOperationTest from './CRUDOperationTest'
+// import SupabaseConnectionTest from './SupabaseConnectionTest'
+// import AuthenticationTest from './AuthenticationTest'
+// import RoleBasedAccessTest from './RoleBasedAccessTest'
+// import CRUDOperationTest from './CRUDOperationTest'
 
 export default function AdminStatsDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -157,32 +157,25 @@ export default function AdminStatsDashboard() {
           title="총 사용자"
           value={stats?.totalUsers || 0}
           change={{ value: 12.5, type: 'increase', period: '지난 달 대비' }}
-          icon={Users}
-          color="blue"
           loading={loading}
         />
         <StatCard
           title="활성 구독"
           value={stats?.activeSubscriptions || 0}
           change={{ value: 8.3, type: 'increase', period: '지난 달 대비' }}
-          icon={TrendingUp}
-          color="green"
           loading={loading}
         />
         <StatCard
           title="월 매출"
           value={stats ? `${(stats.monthlyRevenue / 1000000).toFixed(1)}M원` : '0원'}
           change={{ value: 15.7, type: 'increase', period: '지난 달 대비' }}
-          icon={DollarSign}
-          color="purple"
           loading={loading}
         />
         <StatCard
           title="신고 대기"
           value={stats?.reportedContent || 0}
           change={{ value: 5.2, type: 'decrease', period: '지난 주 대비' }}
-          icon={AlertTriangle}
-          color="red"
+
           loading={loading}
         />
       </div>
@@ -210,44 +203,36 @@ export default function AdminStatsDashboard() {
         <StatCard
           title="총 게시글"
           value={stats?.totalPosts || 0}
-          icon={MessageSquare}
-          color="indigo"
           loading={loading}
         />
         <StatCard
           title="총 댓글"
           value={stats?.totalComments || 0}
-          icon={MessageSquare}
-          color="blue"
           loading={loading}
         />
         <StatCard
           title="완료된 예약"
           value={stats?.completedAppointments || 0}
-          icon={Calendar}
-          color="green"
           loading={loading}
         />
         <StatCard
           title="등록 병원"
           value={stats?.totalDoctors || 0}
-          icon={Building2}
-          color="yellow"
           loading={loading}
         />
       </div>
 
       {/* Supabase 연결 상태 및 테스트 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SupabaseConnectionTest />
         <AuthenticationTest />
       </div>
       
       {/* 역할별 접근 권한 테스트 */}
-      <RoleBasedAccessTest />
+      {/* <RoleBasedAccessTest />
       
       {/* CRUD 작업 테스트 */}
-      <CRUDOperationTest />
+      {/* <CRUDOperationTest /> */}
 
       {/* 시스템 상태 */}
       {stats && (

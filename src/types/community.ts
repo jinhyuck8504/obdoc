@@ -8,6 +8,7 @@ export interface Post {
   title: string
   content: string
   category: 'general' | 'diet' | 'exercise' | 'success' | 'question'
+  tags?: string[]
   isAnonymous: boolean
   anonymousNickname?: string
   status: 'active' | 'hidden' | 'deleted'
@@ -91,3 +92,24 @@ export interface Report {
   }
   target?: Post | Comment
 }
+
+// 게시글 카테고리 상수
+export const POST_CATEGORIES = {
+  general: '일반',
+  diet: '식단',
+  exercise: '운동',
+  success: '성공사례',
+  question: '질문'
+} as const
+
+// 인기 태그 상수
+export const POPULAR_TAGS = [
+  '다이어트',
+  '운동',
+  '식단관리',
+  '체중감량',
+  '건강관리',
+  '생활습관',
+  '동기부여',
+  '성공후기'
+] as const

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { performanceMonitor, PerformanceMetrics } from '@/lib/performance'
 import { cacheManager } from '@/lib/cache'
-import { Card } from '@/components/ui/card'
+import { Card } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { 
   Activity, 

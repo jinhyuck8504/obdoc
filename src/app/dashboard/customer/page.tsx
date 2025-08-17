@@ -30,8 +30,7 @@ export default function CustomerDashboardPage() {
       default:
         toast({
           title: '준비 중',
-          description: '해당 기능은 준비 중입니다.',
-          variant: 'default'
+          description: '해당 기능은 준비 중입니다.'
         })
     }
   }
@@ -48,21 +47,18 @@ export default function CustomerDashboardPage() {
         
         toast({
           title: '체중 기록 완료',
-          description: `오늘의 체중 ${weight}kg가 기록되었습니다.`,
-          variant: 'default'
+          description: `오늘의 체중 ${weight}kg가 기록되었습니다.`
         })
       } else if (weight !== null) {
         toast({
           title: '입력 오류',
-          description: '올바른 체중을 입력해주세요.',
-          variant: 'destructive'
+          description: '올바른 체중을 입력해주세요.'
         })
       }
     } catch (error) {
       toast({
         title: '오류 발생',
-        description: '체중 기록 중 오류가 발생했습니다.',
-        variant: 'destructive'
+        description: '체중 기록 중 오류가 발생했습니다.'
       })
     } finally {
       setLoading(false)

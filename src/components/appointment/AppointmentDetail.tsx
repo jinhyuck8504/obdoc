@@ -115,7 +115,7 @@ export default function AppointmentDetail({
 
   const getTimeUntilAppointment = () => {
     const now = new Date()
-    const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`)
+    const appointmentDateTime = new Date(`${appointment.appointmentDate}T${appointment.appointmentTime}`)
     const diffMs = appointmentDateTime.getTime() - now.getTime()
     
     if (diffMs < 0) {
@@ -140,8 +140,8 @@ export default function AppointmentDetail({
     setShowDeleteConfirm(false)
   }
 
-  const appointmentPast = isPast(appointment.date, appointment.time)
-  const appointmentToday = isToday(appointment.date)
+  const appointmentPast = isPast(appointment.appointmentDate, appointment.appointmentTime)
+  const appointmentToday = isToday(appointment.appointmentDate)
   const timeUntil = getTimeUntilAppointment()
 
   return (
@@ -199,8 +199,8 @@ export default function AppointmentDetail({
           </div>
           
           <div className="text-right">
-            <p className="text-2xl font-bold">{formatTime(appointment.time)}</p>
-            <p className="text-blue-100">{appointment.duration}분</p>
+            <p className="text-2xl font-bold">{formatTime(appointment.appointmentTime)}</p>
+            <p className="text-blue-100">30분</p>
           </div>
         </div>
       </div>
@@ -218,16 +218,16 @@ export default function AppointmentDetail({
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
                 <span className="text-xl font-bold text-blue-600">
-                  {appointment.customerName.charAt(0)}
+                  {appointment.customer?.name?.charAt(0) || 'C'}
                 </span>
               </div>
               <div>
-                <h4 className="text-xl font-semibold text-gray-900">{appointment.customerName}</h4>
+                <h4 className="text-xl font-semibold text-gray-900">{appointment.customer?.name || '고객'}</h4>
                 <div className="flex items-center space-x-4 mt-2">
                   <div className="flex items-center text-gray-600">
                     <Phone className="w-4 h-4 mr-2" />
-                    <a href={`tel:${appointment.customerPhone}`} className="hover:text-blue-600 transition-colors">
-                      {appointment.customerPhone}
+                    <a href={`tel:${appointment.customer?.phone}`} className="hover:text-blue-600 transition-colors">
+                      {appointment.customer?.phone || '전화번호 없음'}
                     </a>
                   </div>
                   <span className="text-gray-400">•</span>
@@ -249,7 +249,7 @@ export default function AppointmentDetail({
                 <label className="block text-sm font-medium text-gray-700 mb-1">날짜</label>
                 <div className="flex items-center text-gray-900">
                   <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                  {formatDate(appointment.date)}
+                  {formatDate(appointment.appointmentDate)}
                 </div>
               </div>
 
@@ -257,7 +257,7 @@ export default function AppointmentDetail({
                 <label className="block text-sm font-medium text-gray-700 mb-1">시간</label>
                 <div className="flex items-center text-gray-900">
                   <Clock className="w-4 h-4 mr-2 text-gray-400" />
-                  {formatTime(appointment.time)} ({appointment.duration}분)
+                  {formatTime(appointment.appointmentTime)} (30분)
                 </div>
               </div>
 
@@ -407,7 +407,7 @@ export default function AppointmentDetail({
             </div>
             
             <p className="text-gray-700 mb-6">
-              <strong>{appointment.customerName}</strong>님의 {formatDate(appointment.date)} {formatTime(appointment.time)} 예약을 삭제하시겠습니까?
+              <strong>{appointment.customer?.name}</strong>님의 {formatDate(appointment.appointmentDate)} {formatTime(appointment.appointmentTime)} 예약을 삭제하시겠습니까?
             </p>
             
             <div className="flex items-center justify-end space-x-3">

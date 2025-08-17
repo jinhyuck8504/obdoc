@@ -109,4 +109,105 @@ if (typeof setInterval !== 'undefined') {
   setInterval(cleanupExpiredRecords, 5 * 60 * 1000) // 5분마다
 }
 
+/**
+ * 엄격한 Rate Limiter (더 낮은 제한)
+ */
+export function strictRateLimiter(config: Partial<RateLimitConfig> = {}) {
+  const strictConfig = {
+    windowMs: 5 * 60 * 1000, // 5분
+    maxRequests: 10, // 더 낮은 제한
+    message: 'Too many requests - strict limit applied',
+    ...config
+  }
+
+  return rateLimiter(strictConfig)
+}
+
+/**
+ * Rate limit 통계 조회
+ */
+export function getRateLimitStats(): {
+  totalKeys: number
+  activeWindows: number
+  topIPs: Array<{ ip: string; requests: number }>
+} {
+  const now = Date.now()
+  const activeRecords = Array.from(requestCounts.entries())
+    .filter(([_, record]) => now <= record.resetTime)
+
+  const ipStats = new Map<string, number>()
+  
+  activeRecords.forEach(([key, record]) => {
+    const ip = key.split(':')[0]
+    ipStats.set(ip, (ipStats.get(ip) || 0) + record.count)
+  })
+
+  const topIPs = Array.from(ipStats.entries())
+    .map(([ip, requests]) => ({ ip, requests }))
+    .sort((a, b) => b.requests - a.requests)
+    .slice(0, 10)
+
+  return {
+    totalKeys: requestCounts.size,
+    activeWindows: activeRecords.length,
+    topIPs
+  }
+}
+
+/**
+ * 차단된 IP 목록 조회
+ */
+export function getBlockedIPs(): Array<{ ip: string; blockedUntil: number }> {
+  const now = Date.now()
+  const blocked: Array<{ ip: string; blockedUntil: number }> = []
+
+  for (const [key, record] of requestCounts.entries()) {
+    if (record.count >= defaultConfig.maxRequests && now <= record.resetTime) {
+      const ip = key.split(':')[0]
+      blocked.push({
+        ip,
+        blockedUntil: record.resetTime
+      })
+    }
+  }
+
+  return blocked
+}
+
+/**
+ * 의심스러운 IP 목록 조회
+ */
+export function getSuspiciousIPs(): Array<{ ip: string; requests: number; suspicionLevel: 'LOW' | 'MEDIUM' | 'HIGH' }> {
+  const now = Date.now()
+  const ipStats = new Map<string, number>()
+
+  // 활성 기록에서 IP별 요청 수 집계
+  for (const [key, record] of requestCounts.entries()) {
+    if (now <= record.resetTime) {
+      const ip = key.split(':')[0]
+      ipStats.set(ip, (ipStats.get(ip) || 0) + record.count)
+    }
+  }
+
+  const suspicious: Array<{ ip: string; requests: number; suspicionLevel: 'LOW' | 'MEDIUM' | 'HIGH' }> = []
+
+  for (const [ip, requests] of ipStats.entries()) {
+    let suspicionLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW'
+
+    if (requests >= defaultConfig.maxRequests * 0.8) {
+      suspicionLevel = 'HIGH'
+    } else if (requests >= defaultConfig.maxRequests * 0.5) {
+      suspicionLevel = 'MEDIUM'
+    } else if (requests >= defaultConfig.maxRequests * 0.3) {
+      suspicionLevel = 'LOW'
+    } else {
+      continue // 의심스럽지 않음
+    }
+
+    suspicious.push({ ip, requests, suspicionLevel })
+  }
+
+  return suspicious.sort((a, b) => b.requests - a.requests)
+}
+
 export default rateLimiter

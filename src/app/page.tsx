@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowRight, Users, BarChart3, MessageCircle, Activity, CheckCircle, Heart, Shield, Zap, TrendingUp, Target, Stethoscope } from 'lucide-react'
 import Logo from '@/components/common/Logo'
 import Button from '@/components/ui/Button'
-import { Card, CardBody } from '@/components/ui/card'
+import { Card, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import AutoRedirect from '@/components/auth/AutoRedirect'
 

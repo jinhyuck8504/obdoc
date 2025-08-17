@@ -176,4 +176,92 @@ export function validateInput(data: any, rules: Record<string, any>): { isValid:
   }
 }
 
+/**
+ * 클라이언트 IP 주소 추출
+ */
+export function getClientIP(request: NextRequest): string {
+  return request.ip || 
+         request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+         request.headers.get('x-real-ip') || 
+         request.headers.get('cf-connecting-ip') || 
+         'unknown'
+}
+
+/**
+ * 보안 헤더 미들웨어
+ */
+export function securityHeadersMiddleware(request: NextRequest): NextResponse {
+  const response = NextResponse.next()
+  setSecurityHeaders(response)
+  return response
+}
+
+/**
+ * 입력 검증 미들웨어
+ */
+export function inputValidationMiddleware(rules: Record<string, any>) {
+  return async (request: NextRequest): Promise<NextResponse | null> => {
+    try {
+      const body = await request.json()
+      const validation = validateInput(body, rules)
+      
+      if (!validation.isValid) {
+        return NextResponse.json(
+          { error: 'Validation failed', details: validation.errors },
+          { status: 400 }
+        )
+      }
+      
+      return null // 검증 통과
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid JSON' },
+        { status: 400 }
+      )
+    }
+  }
+}
+
+/**
+ * 보안 래퍼 함수
+ */
+export function withSecurity(
+  handler: (request: NextRequest, context?: any) => Promise<NextResponse>,
+  config: SecurityConfig = {}
+) {
+  return async (request: NextRequest, context?: any): Promise<NextResponse> => {
+    // 보안 검증
+    const validation = validateApiRequest(request)
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
+      )
+    }
+
+    // Rate limiting
+    const ip = getClientIP(request)
+    const finalConfig = { ...defaultConfig, ...config }
+    
+    if (finalConfig.enableRateLimit && !checkRateLimit(ip, finalConfig)) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429 }
+      )
+    }
+
+    try {
+      const response = await handler(request, context)
+      setSecurityHeaders(response)
+      return response
+    } catch (error) {
+      console.error('Handler error:', error)
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      )
+    }
+  }
+}
+
 export default securityMiddleware

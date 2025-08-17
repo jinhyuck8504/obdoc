@@ -6,7 +6,40 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { SecurityScanReport, VulnerabilityResult, VulnerabilityTest } from '@/lib/security/vulnerabilityScanner'
+// import { SecurityScanReport, VulnerabilityResult, VulnerabilityTest } from '@/lib/security/vulnerabilityScanner'
+
+// 임시 타입 정의
+interface VulnerabilityResult {
+  id: string
+  type: string
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  title: string
+  description: string
+  endpoint?: string
+  recommendation: string
+  timestamp: Date
+}
+
+interface SecurityScanReport {
+  scanId: string
+  timestamp: Date
+  vulnerabilities: VulnerabilityResult[]
+  summary: {
+    total: number
+    critical: number
+    high: number
+    medium: number
+    low: number
+  }
+  overallScore: number
+  riskLevel: string
+}
+
+interface VulnerabilityTest {
+  id: string
+  name: string
+  description: string
+}
 
 interface SecurityScanDashboardProps {
   className?: string
@@ -33,13 +66,10 @@ export default function SecurityScanDashboard({ className = '' }: SecurityScanDa
     setError(null)
 
     try {
-      const token = await user?.getIdToken()
-      if (!token) throw new Error('인증 토큰이 없습니다')
+      if (!user) throw new Error('사용자 인증이 필요합니다')
 
       // 스캔 기록 조회
-      const historyResponse = await fetch('/api/admin/security/vulnerability-scan', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+      const historyResponse = await fetch('/api/admin/security/vulnerability-scan')
 
       if (!historyResponse.ok) {
         throw new Error('스캔 기록 조회 실패')
@@ -49,9 +79,7 @@ export default function SecurityScanDashboard({ className = '' }: SecurityScanDa
       setScanHistory(historyData.scanHistory || [])
 
       // 최신 스캔 결과 조회
-      const latestResponse = await fetch('/api/admin/security/vulnerability-scan?latest=true', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+      const latestResponse = await fetch('/api/admin/security/vulnerability-scan?latest=true')
 
       if (latestResponse.ok) {
         const latestData = await latestResponse.json()
@@ -71,14 +99,12 @@ export default function SecurityScanDashboard({ className = '' }: SecurityScanDa
     setError(null)
 
     try {
-      const token = await user?.getIdToken()
-      if (!token) throw new Error('인증 토큰이 없습니다')
+      if (!user) throw new Error('사용자 인증이 필요합니다')
 
       const response = await fetch('/api/admin/security/vulnerability-scan', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ fullScan: true })
       })
@@ -103,14 +129,12 @@ export default function SecurityScanDashboard({ className = '' }: SecurityScanDa
 
   const runSpecificTest = async (testId: string) => {
     try {
-      const token = await user?.getIdToken()
-      if (!token) throw new Error('인증 토큰이 없습니다')
+      if (!user) throw new Error('사용자 인증이 필요합니다')
 
       const response = await fetch('/api/admin/security/vulnerability-scan', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ testId, fullScan: false })
       })
@@ -254,7 +278,7 @@ export default function SecurityScanDashboard({ className = '' }: SecurityScanDa
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">심각한 이슈</p>
-                <p className="text-2xl font-semibold text-red-600">{latestScan.criticalIssues}</p>
+                <p className="text-2xl font-semibold text-red-600">{latestScan.summary.critical}</p>
               </div>
             </div>
           </div>
@@ -270,7 +294,7 @@ export default function SecurityScanDashboard({ className = '' }: SecurityScanDa
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">높은 위험</p>
-                <p className="text-2xl font-semibold text-orange-600">{latestScan.highIssues}</p>
+                <p className="text-2xl font-semibold text-orange-600">{latestScan.summary.high}</p>
               </div>
             </div>
           </div>
@@ -287,7 +311,7 @@ export default function SecurityScanDashboard({ className = '' }: SecurityScanDa
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">통과한 테스트</p>
                 <p className="text-2xl font-semibold text-green-600">
-                  {latestScan.passedTests}/{latestScan.totalTests}
+                  {latestScan.summary.total - latestScan.summary.critical - latestScan.summary.high}/{latestScan.summary.total}
                 </p>
               </div>
             </div>
@@ -310,40 +334,34 @@ export default function SecurityScanDashboard({ className = '' }: SecurityScanDa
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {latestScan.results.map((result, index) => (
+              {latestScan.vulnerabilities.map((result, index) => (
                 <div key={index} className={`p-4 rounded-lg border ${
-                  result.passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                  result.severity === 'low' ? 'bg-green-50 border-green-200' : 
+                  result.severity === 'medium' ? 'bg-yellow-50 border-yellow-200' :
+                  result.severity === 'high' ? 'bg-orange-50 border-orange-200' :
+                  'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          result.passed ? 'bg-green-100 text-green-800' : getSeverityColor(result.severity)
-                        }`}>
-                          {result.passed ? '통과' : result.severity.toUpperCase()}
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(result.severity)}`}>
+                          {result.severity.toUpperCase()}
                         </span>
                         <h4 className="font-medium text-gray-900">
-                          {result.testId.replace(/_/g, ' ').toUpperCase()}
+                          {result.title}
                         </h4>
                       </div>
-                      <p className="text-sm text-gray-700 mt-1">{result.message}</p>
+                      <p className="text-sm text-gray-700 mt-1">{result.description}</p>
                       
-                      {result.recommendations && result.recommendations.length > 0 && (
+                      {result.recommendation && (
                         <div className="mt-2">
                           <p className="text-xs font-medium text-gray-600 mb-1">권장사항:</p>
-                          <ul className="text-xs text-gray-600 space-y-1">
-                            {result.recommendations.map((rec, i) => (
-                              <li key={i} className="flex items-start space-x-1">
-                                <span>•</span>
-                                <span>{rec}</span>
-                              </li>
-                            ))}
-                          </ul>
+                          <p className="text-xs text-gray-600">{result.recommendation}</p>
                         </div>
                       )}
                     </div>
                     <div className="ml-4">
-                      {result.passed ? (
+                      {result.severity === 'low' ? (
                         <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>

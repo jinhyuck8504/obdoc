@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, User, Building, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useToast } from '@/contexts/ToastContext'
+import { useToast } from '@/hooks/use-toast'
+import { auth } from '@/lib/auth'
 import Logo from '@/components/common/Logo'
 import Button from '@/components/ui/Button'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -23,8 +24,7 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   
-  const { signUp } = useAuth()
-  const { addToast } = useToast()
+  const { toast } = useToast()
   const router = useRouter()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -36,24 +36,33 @@ export default function SignupPage() {
     e.preventDefault()
     
     if (!formData.email || !formData.password || !formData.name) {
-      addToast('필수 정보를 모두 입력해주세요.', 'error')
+      toast({
+        title: '입력 오류',
+        description: '필수 정보를 모두 입력해주세요.'
+      })
       return
     }
 
     if (formData.password !== formData.confirmPassword) {
-      addToast('비밀번호가 일치하지 않습니다.', 'error')
+      toast({
+        title: '비밀번호 오류',
+        description: '비밀번호가 일치하지 않습니다.'
+      })
       return
     }
 
     if (formData.password.length < 6) {
-      addToast('비밀번호는 6자 이상이어야 합니다.', 'error')
+      toast({
+        title: '비밀번호 오류',
+        description: '비밀번호는 6자 이상이어야 합니다.'
+      })
       return
     }
 
     setIsLoading(true)
     
     try {
-      const { error } = await signUp(formData.email, formData.password, {
+      const { error } = await auth.signUp(formData.email, formData.password, {
         name: formData.name,
         hospital_name: formData.hospitalName,
         hospital_type: formData.hospitalType,
@@ -62,13 +71,22 @@ export default function SignupPage() {
       })
       
       if (error) {
-        addToast(error.message || '회원가입에 실패했습니다.', 'error')
+        toast({
+          title: '회원가입 실패',
+          description: error.message || '회원가입에 실패했습니다.'
+        })
       } else {
-        addToast('회원가입이 완료되었습니다. 관리자 승인 후 서비스를 이용할 수 있습니다.', 'success')
+        toast({
+          title: '회원가입 완료',
+          description: '회원가입이 완료되었습니다. 관리자 승인 후 서비스를 이용할 수 있습니다.'
+        })
         router.push('/login')
       }
     } catch (error) {
-      addToast('회원가입 중 오류가 발생했습니다.', 'error')
+      toast({
+        title: '오류 발생',
+        description: '회원가입 중 오류가 발생했습니다.'
+      })
     } finally {
       setIsLoading(false)
     }

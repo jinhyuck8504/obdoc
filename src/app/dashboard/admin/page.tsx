@@ -22,14 +22,12 @@ export default function AdminDashboardPage() {
       
       toast({
         title: action === 'approve' ? '승인 완료' : '거절 완료',
-        description: `${hospitalName}의 가입 신청이 ${action === 'approve' ? '승인' : '거절'}되었습니다.`,
-        variant: action === 'approve' ? 'default' : 'destructive'
+        description: `${hospitalName}의 가입 신청이 ${action === 'approve' ? '승인' : '거절'}되었습니다.`
       })
     } catch (error) {
       toast({
         title: '오류 발생',
-        description: '처리 중 오류가 발생했습니다. 다시 시도해주세요.',
-        variant: 'destructive'
+        description: '처리 중 오류가 발생했습니다. 다시 시도해주세요.'
       })
     } finally {
       setLoading(false)

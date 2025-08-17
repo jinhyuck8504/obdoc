@@ -275,3 +275,32 @@ export const validateInviteCodeStrength = (code: string): {
     issues
   }
 }
+
+/**
+ * 가입 코드 형식 검증
+ */
+export const validateInviteCodeFormat = (code: string): boolean => {
+  // 기본 형식: 8-16자, 영문 대소문자 + 숫자
+  const formatRegex = /^[A-Za-z0-9]{8,16}$/
+  return formatRegex.test(code)
+}
+
+/**
+ * 병원 코드에서 가입 코드 추출
+ */
+export const extractHospitalCodeFromInvite = (inviteCode: string): string | null => {
+  // 가입 코드 형식: HOSPITAL_CODE-INVITE_SUFFIX
+  const parts = inviteCode.split('-')
+  if (parts.length >= 2) {
+    return parts[0]
+  }
+  return null
+}
+
+/**
+ * 가입 코드 생성
+ */
+export const generateInviteCode = (hospitalCode: string, suffix?: string): string => {
+  const randomSuffix = suffix || crypto.randomBytes(4).toString('hex').toUpperCase()
+  return `${hospitalCode}-${randomSuffix}`
+}

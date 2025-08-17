@@ -28,6 +28,22 @@ export interface Appointment {
   }
 }
 
+export interface AppointmentFormData {
+  customerId: string
+  date: string
+  time: string
+  duration: number
+  type: Appointment['type']
+  notes?: string
+  symptoms?: string
+}
+
+export interface TimeSlot {
+  time: string
+  available: boolean
+  reason?: string
+}
+
 export interface CreateAppointmentRequest {
   customerId: string
   doctorId: string

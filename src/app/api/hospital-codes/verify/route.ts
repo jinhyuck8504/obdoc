@@ -53,14 +53,14 @@ export async function POST(request: NextRequest) {
     // 5. 코드 검증
     const result = await verifyHospitalCode(code)
 
-    if (!result.isValid) {
+    if (!result.success) {
       // TODO: 실패 로깅 임시 비활성화
       // securityLogger.logHospitalCodeFailure(...)
       
       return NextResponse.json(
         {
-          error: result.error,
-          message: ERROR_MESSAGES[result.error!]
+          error: 'INVALID_CODE',
+          message: result.error || '유효하지 않은 병원 코드입니다.'
         },
         { status: 400 }
       )
@@ -72,12 +72,7 @@ export async function POST(request: NextRequest) {
     // 성공 시 코드 정보 반환 (민감한 정보 제외)
     return NextResponse.json({
       isValid: true,
-      code: {
-        id: result.code!.id,
-        code: result.code!.code,
-        name: result.code!.name,
-        isActive: result.code!.isActive
-      }
+      hospitalData: result.hospitalData
     })
   } catch (error) {
     console.error('POST /api/hospital-codes/verify error:', error)

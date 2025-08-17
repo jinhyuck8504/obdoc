@@ -1,15 +1,26 @@
 import React from 'react'
-import { cn } from '@/lib/utils'
 
 interface CardProps {
   children: React.ReactNode
   className?: string
-  hover?: boolean
-  medical?: boolean
-  onClick?: () => void
 }
 
 interface CardHeaderProps {
+  children: React.ReactNode
+  className?: string
+}
+
+interface CardTitleProps {
+  children: React.ReactNode
+  className?: string
+}
+
+interface CardDescriptionProps {
+  children: React.ReactNode
+  className?: string
+}
+
+interface CardContentProps {
   children: React.ReactNode
   className?: string
 }
@@ -19,61 +30,52 @@ interface CardBodyProps {
   className?: string
 }
 
-interface CardFooterProps {
-  children: React.ReactNode
-  className?: string
-}
-
-export function Card({ children, className = '', hover = false, medical = false, onClick }: CardProps) {
-  const baseClasses = 'bg-white rounded-lg border border-gray-200 shadow-sm'
-  const hoverClasses = hover ? 'hover:shadow-md transition-shadow duration-200' : ''
-  const medicalClasses = medical ? 'border-blue-200 bg-blue-50' : ''
-  const clickableClasses = onClick ? 'cursor-pointer' : ''
-  
+export const Card: React.FC<CardProps> = ({ children, className = '' }) => {
   return (
-    <div 
-      className={cn(baseClasses, hoverClasses, medicalClasses, clickableClasses, className)} 
-      onClick={onClick}
-    >
+    <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
       {children}
     </div>
   )
 }
 
-export function CardHeader({ children, className = '' }: CardHeaderProps) {
+export const CardHeader: React.FC<CardHeaderProps> = ({ children, className = '' }) => {
   return (
-    <div className={cn('p-6 pb-0', className)}>
+    <div className={`px-6 py-4 border-b border-gray-200 ${className}`}>
       {children}
     </div>
   )
 }
 
-export function CardBody({ children, className = '' }: CardBodyProps) {
+export const CardTitle: React.FC<CardTitleProps> = ({ children, className = '' }) => {
   return (
-    <div className={cn('p-6', className)}>
+    <h3 className={`text-lg font-semibold text-gray-900 ${className}`}>
+      {children}
+    </h3>
+  )
+}
+
+export const CardDescription: React.FC<CardDescriptionProps> = ({ children, className = '' }) => {
+  return (
+    <p className={`text-sm text-gray-600 mt-1 ${className}`}>
+      {children}
+    </p>
+  )
+}
+
+export const CardContent: React.FC<CardContentProps> = ({ children, className = '' }) => {
+  return (
+    <div className={`px-6 py-4 ${className}`}>
       {children}
     </div>
   )
 }
 
-export function CardFooter({ children, className = '' }: CardFooterProps) {
+export const CardBody: React.FC<CardBodyProps> = ({ children, className = '' }) => {
   return (
-    <div className={cn('p-6 pt-0', className)}>
+    <div className={`p-6 ${className}`}>
       {children}
     </div>
   )
 }
 
-// Export aliases for compatibility with shadcn/ui naming conventions
-export const CardTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-  <h3 className={cn('text-lg font-semibold', className)}>{children}</h3>
-)
-
-export const CardDescription = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-  <p className={cn('text-sm text-gray-600', className)}>{children}</p>
-)
-
-export const CardContent = CardBody
-
-// Default export for compatibility
 export default Card
