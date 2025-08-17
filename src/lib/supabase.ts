@@ -30,6 +30,11 @@ export const supabase = createClient(config.supabase.url, config.supabase.anonKe
   }
 })
 
+// API 라우트에서 사용할 클라이언트 생성 함수
+export function createClient() {
+  return supabase
+}
+
 // 프로덕션 환경 검증
 export function validateProductionEnvironment(): boolean {
   try {

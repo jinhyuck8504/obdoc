@@ -2,11 +2,16 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { Users, Building, BarChart3, AlertTriangle, CheckCircle, Clock, DollarSign, Activity, RefreshCw } from 'lucide-react'
+import { Users, Building, BarChart3, AlertTriangle, CheckCircle, Clock, DollarSign, Activity, RefreshCw, CreditCard } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { Card, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import { useToast } from '@/hooks/use-toast'
+import UserManagementModal from '@/components/admin/UserManagementModal'
+import HospitalManagementModal from '@/components/admin/HospitalManagementModal'
+import AnalyticsModal from '@/components/admin/AnalyticsModal'
+import SubscriptionManagementModal from '@/components/admin/SubscriptionManagementModal'
+import ApiTestPanel from '@/components/admin/ApiTestPanel'
 
 // 타입 정의
 interface PendingApproval {
@@ -45,6 +50,12 @@ export default function AdminDashboardPage() {
   
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  
+  // 모달 상태
+  const [userModalOpen, setUserModalOpen] = useState(false)
+  const [hospitalModalOpen, setHospitalModalOpen] = useState(false)
+  const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false)
+  const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false)
   const [stats, setStats] = useState<AdminStats>({
     total_hospitals: 0,
     total_users: 0,
@@ -164,16 +175,16 @@ export default function AdminDashboardPage() {
   const handleQuickAction = (action: string) => {
     switch (action) {
       case 'users':
-        router.push('/dashboard/admin/users')
+        setUserModalOpen(true)
         break
       case 'hospitals':
-        router.push('/dashboard/admin/hospitals')
+        setHospitalModalOpen(true)
         break
       case 'analytics':
-        router.push('/dashboard/admin/analytics')
+        setAnalyticsModalOpen(true)
         break
       case 'subscriptions':
-        router.push('/dashboard/admin/subscriptions')
+        setSubscriptionModalOpen(true)
         break
       default:
         toast({
@@ -412,7 +423,7 @@ export default function AdminDashboardPage() {
                     variant="outline"
                     onClick={() => handleQuickAction('subscriptions')}
                   >
-                    <DollarSign className="h-4 w-4 mr-3" />
+                    <CreditCard className="h-4 w-4 mr-3" />
                     구독 관리
                   </Button>
                 </div>
@@ -493,7 +504,28 @@ export default function AdminDashboardPage() {
             </Card>
           </div>
         </div>
+        
+        {/* API 테스트 패널 */}
+        <ApiTestPanel />
       </div>
+
+      {/* 모달들 */}
+      <UserManagementModal 
+        isOpen={userModalOpen} 
+        onClose={() => setUserModalOpen(false)} 
+      />
+      <HospitalManagementModal 
+        isOpen={hospitalModalOpen} 
+        onClose={() => setHospitalModalOpen(false)} 
+      />
+      <AnalyticsModal 
+        isOpen={analyticsModalOpen} 
+        onClose={() => setAnalyticsModalOpen(false)} 
+      />
+      <SubscriptionManagementModal 
+        isOpen={subscriptionModalOpen} 
+        onClose={() => setSubscriptionModalOpen(false)} 
+      />
     </div>
   )
 }
