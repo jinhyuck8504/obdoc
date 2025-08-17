@@ -37,7 +37,7 @@ type UserRole = 'doctor' | 'customer'
 // 가입 단계 타입
 type SignupStep = 'role-selection' | 'signup-form' | 'success'
 
-// URL 파라미터 처리 컴포넌트
+// URL 파라미터 처리 컴포넌트 (Suspense 경계 필요)
 function URLParamsHandler({ 
   onRoleChange, 
   onInviteCodeChange 
@@ -125,7 +125,10 @@ const RoleSelectionCard: React.FC<{
   )
 }
 
-function SignupFormContent() {
+
+
+// SignupForm 컴포넌트를 Suspense로 감싸서 useSearchParams 사용 가능하게 함
+function SignupFormWithParams() {
   const router = useRouter()
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState<SignupStep>('role-selection')
@@ -133,12 +136,12 @@ function SignupFormContent() {
   const [inviteCode, setInviteCode] = useState<string>('')
   const [signupSuccess, setSignupSuccess] = useState(false)
   const [useLegacyMode, setUseLegacyMode] = useState(false)
-  const [useEnhancedMode, setUseEnhancedMode] = useState(true) // 기본적으로 새 시스템 사용
+  const [useEnhancedMode, setUseEnhancedMode] = useState(true)
   
   // 실시간 알림 연결
   const { isConnected } = useNotifications({ autoConnect: false })
 
-  // URL 파라미터 처리
+  // URL 파라미터 처리 (Suspense 내부에서 안전하게 사용)
   const handleRoleChange = (role: UserRole) => {
     setSelectedRole(role)
     setCurrentStep('signup-form')
@@ -290,6 +293,12 @@ function SignupFormContent() {
             각 역할에 맞는 보안 정책과 검증 절차가 적용됩니다
           </p>
         </div>
+
+        {/* URL 파라미터 처리 */}
+        <URLParamsHandler 
+          onRoleChange={handleRoleChange}
+          onInviteCodeChange={handleInviteCodeChange}
+        />
       </div>
     )
   }
@@ -371,11 +380,7 @@ export default function SignupForm() {
         </div>
       }>
         <LegacySignupSupport>
-          <SignupFormContent />
-          <URLParamsHandler 
-            onRoleChange={(role) => {}} 
-            onInviteCodeChange={(code) => {}} 
-          />
+          <SignupFormWithParams />
         </LegacySignupSupport>
         
         {/* 빠른 피드백 위젯 */}
