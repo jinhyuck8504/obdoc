@@ -9,6 +9,10 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+  
+  [plugins.inputs]
+    # Enable App Router support
+    experimental = { appDir = true }
 
 [dev]
   command = "npm run dev"
@@ -20,10 +24,11 @@
   to = "/login"
   status = 302
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
+# Next.js App Router API routes - remove this redirect to let Next.js handle API routes
+# [[redirects]]
+#   from = "/api/*"
+#   to = "/.netlify/functions/:splat"
+#   status = 200
 
 # Headers for security
 [[headers]]
