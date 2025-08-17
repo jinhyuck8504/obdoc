@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { getConfig, isDummySupabase } from './config'
 
 // 환경 설정 가져오기
@@ -13,7 +13,7 @@ if (isDummySupabase()) {
 }
 
 // Supabase 클라이언트 생성 (간단한 싱글톤)
-export const supabase = createClient(config.supabase.url, config.supabase.anonKey, {
+export const supabase = createSupabaseClient(config.supabase.url, config.supabase.anonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

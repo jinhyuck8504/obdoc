@@ -63,12 +63,6 @@ const HospitalManagementModal: React.FC<HospitalManagementModalProps> = ({ isOpe
         description: '병원 목록을 불러오는 중 오류가 발생했습니다.',
         variant: 'destructive'
       })
-    } catch (error) {
-      toast({
-        title: '오류 발생',
-        description: '병원 목록을 불러오는 중 오류가 발생했습니다.',
-        variant: 'destructive'
-      })
     } finally {
       setLoading(false)
     }
