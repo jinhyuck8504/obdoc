@@ -25,11 +25,12 @@ function validateEnvironmentVariables(): Config {
   const requiredVars = {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://obdoc.netlify.app',
   }
 
+  // APP_URL은 기본값이 있으므로 제외하고 체크
   const missingVars = Object.entries(requiredVars)
-    .filter(([_, value]) => !value)
+    .filter(([key, value]) => !value && key !== 'NEXT_PUBLIC_APP_URL')
     .map(([key]) => key)
 
   if (missingVars.length > 0) {
