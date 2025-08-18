@@ -1,69 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { isSuperAdmin, getConfig } from '@/lib/config'
-import { cookies } from 'next/headers'
+import { verifyAdminAuth, createServerClient } from '@/lib/server-auth'
 
-// 서버 사이드 Supabase 클라이언트 생성
-function createServerClient() {
-  const config = getConfig()
-  return createClient(config.supabase.url, config.supabase.anonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  })
-}
-
-// 관리자 권한 확인 함수
-async function verifyAdminAuth(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    // 임시로 모든 환경에서 인증 체크 건너뛰기 (데모용)
-    console.log('Stats API 호출 - 인증 체크 우회 (데모 모드)')
-    return { id: 'demo-admin', email: 'admin@obdoc.com' }
-    
-    // TODO: 실제 프로덕션에서는 아래 코드 활성화
-    /*
-    // 쿠키에서 세션 토큰 가져오기
-    const cookieStore = cookies()
-    const accessToken = cookieStore.get('sb-access-token')?.value
-    
-    if (!accessToken) {
-      throw new Error('인증이 필요합니다')
-    }
+    // 실제 관리자 권한 확인
+    await verifyAdminAuth(request)
     
     const supabase = createServerClient()
     
-    // 토큰으로 사용자 정보 가져오기
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken)
+    // 실제 데이터베이스에서 통계 조회
+    const [
+      hospitalCountResult,
+      userCountResult,
+      pendingApprovalsResult,
+      recentActivityResult,
+      subscriptionResult
+    ] = await Promise.allSettled([
+      // 승인된 병원 수
+      supabase
+        .from('users')
+        .select('id', { count: 'exact' })
+        .eq('role', 'doctor')
+        .eq('status', 'approved'),
+      
+      // 전체 사용자 수
+      supabase
+        .from('users')
+        .select('id', { count: 'exact' }),
+      
+      // 승인 대기 수
+      supabase
+        .from('users')
+        .select('id', { count: 'exact' })
+        .eq('status', 'pending')
+        .eq('role', 'doctor'),
+      
+      // 최근 24시간 활동
+      supabase
+        .from('activity_logs')
+        .select('id', { count: 'exact' })
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+      
+      // 활성 구독
+      supabase
+        .from('subscriptions')
+        .select('amount')
+        .eq('status', 'active')
+    ])
     
-    if (error || !user) {
-      throw new Error('인증이 필요합니다')
-    }
+    // 결과 처리
+    const totalHospitals = hospitalCountResult.status === 'fulfilled' 
+      ? hospitalCountResult.value.count || 0 
+      : 0
     
-    if (!isSuperAdmin(user.email)) {
-      throw new Error('관리자 권한이 필요합니다')
-    }
+    const totalUsers = userCountResult.status === 'fulfilled' 
+      ? userCountResult.value.count || 0 
+      : 0
     
-    return user
-    */
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : '권한 확인 중 오류가 발생했습니다')
-  }
-}
-
-export async function GET(request: NextRequest) {
-  // 모든 오류를 캐치하여 항상 성공 응답 반환 (데모 모드)
-  try {
-    console.log('Stats API 호출됨 - 데모 모드')
+    const pendingApprovals = pendingApprovalsResult.status === 'fulfilled' 
+      ? pendingApprovalsResult.value.count || 0 
+      : 0
     
-    // 더미 데이터로 즉시 응답
+    const recentActivity = recentActivityResult.status === 'fulfilled' 
+      ? recentActivityResult.value.count || 0 
+      : 0
+    
+    const subscriptions = subscriptionResult.status === 'fulfilled' 
+      ? subscriptionResult.value.data || [] 
+      : []
+    
+    // 월 매출 계산
+    const monthlyRevenue = subscriptions.reduce((sum, sub) => sum + (sub.amount || 0), 0)
+    
+    // 활성 세션 추정 (전체 사용자의 10% 정도)
+    const activeSessions = Math.floor(totalUsers * 0.1)
+    
     const stats = {
-      total_hospitals: 47,
-      total_users: 1234,
-      monthly_revenue: 7943000,
-      active_sessions: 89,
-      pending_approvals: 3,
-      recent_activity: 12,
+      total_hospitals: totalHospitals,
+      total_users: totalUsers,
+      monthly_revenue: monthlyRevenue,
+      active_sessions: activeSessions,
+      pending_approvals: pendingApprovals,
+      recent_activity: recentActivity,
       last_updated: new Date().toISOString()
     }
     
@@ -73,20 +91,10 @@ export async function GET(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Stats API 오류:', error)
-    
-    // 오류가 발생해도 기본 더미 데이터 반환
+    console.error('통계 데이터 API 오류:', error)
     return NextResponse.json({
-      success: true,
-      data: {
-        total_hospitals: 47,
-        total_users: 1234,
-        monthly_revenue: 7943000,
-        active_sessions: 89,
-        pending_approvals: 3,
-        recent_activity: 12,
-        last_updated: new Date().toISOString()
-      }
-    })
+      success: false,
+      error: error instanceof Error ? error.message : '통계 데이터 조회 중 오류가 발생했습니다'
+    }, { status: 500 })
   }
 }

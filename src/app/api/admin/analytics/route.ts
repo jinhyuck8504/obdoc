@@ -1,92 +1,201 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { isSuperAdmin, getConfig } from '@/lib/config'
-import { cookies } from 'next/headers'
-
-// 서버 사이드 Supabase 클라이언트 생성
-function createServerClient() {
-  const config = getConfig()
-  return createClient(config.supabase.url, config.supabase.anonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  })
-}
-
-// 관리자 권한 확인 함수
-async function verifyAdminAuth(request: NextRequest) {
-  try {
-    // 임시로 모든 환경에서 인증 체크 건너뛰기 (데모용)
-    console.log('Analytics API 호출 - 인증 체크 우회 (데모 모드)')
-    return { id: 'demo-admin', email: 'admin@obdoc.com' }
-    
-    // TODO: 실제 프로덕션에서는 아래 코드 활성화
-    /*
-    // 쿠키에서 세션 토큰 가져오기
-    const cookieStore = cookies()
-    const accessToken = cookieStore.get('sb-access-token')?.value
-    
-    if (!accessToken) {
-      throw new Error('인증이 필요합니다')
-    }
-    
-    const supabase = createServerClient()
-    
-    // 토큰으로 사용자 정보 가져오기
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken)
-    
-    if (error || !user) {
-      throw new Error('인증이 필요합니다')
-    }
-    
-    if (!isSuperAdmin(user.email)) {
-      throw new Error('관리자 권한이 필요합니다')
-    }
-    
-    return user
-    */
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : '권한 확인 중 오류가 발생했습니다')
-  }
-}
+import { verifyAdminAuth, createServerClient } from '@/lib/server-auth'
 
 export async function GET(request: NextRequest) {
-  // 모든 오류를 캐치하여 항상 성공 응답 반환 (데모 모드)
   try {
-    console.log('Analytics API 호출됨 - 데모 모드')
+    // 실제 관리자 권한 확인
+    await verifyAdminAuth(request)
     
-    // 더미 데이터로 즉시 응답
+    const supabase = createServerClient()
+    const { searchParams } = new URL(request.url)
+    const period = searchParams.get('period') || '30days'
+    
+    // 기간별 날짜 계산
+    const now = new Date()
+    let startDate = new Date()
+    
+    switch (period) {
+      case '7days':
+        startDate.setDate(now.getDate() - 7)
+        break
+      case '30days':
+        startDate.setDate(now.getDate() - 30)
+        break
+      case '90days':
+        startDate.setDate(now.getDate() - 90)
+        break
+      case '1year':
+        startDate.setFullYear(now.getFullYear() - 1)
+        break
+      default:
+        startDate.setDate(now.getDate() - 30)
+    }
+    
+    // 실제 데이터베이스에서 통계 조회
+    const [
+      hospitalCountResult,
+      userCountResult,
+      subscriptionResult,
+      activityResult
+    ] = await Promise.allSettled([
+      // 승인된 병원 수
+      supabase
+        .from('users')
+        .select('id', { count: 'exact' })
+        .eq('role', 'doctor')
+        .eq('status', 'approved'),
+      
+      // 전체 사용자 수
+      supabase
+        .from('users')
+        .select('id', { count: 'exact' }),
+      
+      // 구독 정보
+      supabase
+        .from('subscriptions')
+        .select('plan, amount, status, created_at'),
+      
+      // 최근 활동
+      supabase
+        .from('activity_logs')
+        .select('created_at, action')
+        .gte('created_at', startDate.toISOString())
+    ])
+    
+    // 결과 처리
+    const totalHospitals = hospitalCountResult.status === 'fulfilled' 
+      ? hospitalCountResult.value.count || 0 
+      : 0
+    
+    const totalUsers = userCountResult.status === 'fulfilled' 
+      ? userCountResult.value.count || 0 
+      : 0
+    
+    const subscriptions = subscriptionResult.status === 'fulfilled' 
+      ? subscriptionResult.value.data || [] 
+      : []
+    
+    const activities = activityResult.status === 'fulfilled' 
+      ? activityResult.value.data || [] 
+      : []
+    
+    // 월별 매출 계산
+    const monthlyRevenue = subscriptions
+      .filter(sub => sub.status === 'active')
+      .reduce((sum, sub) => sum + (sub.amount || 0), 0)
+    
+    // 병원 유형별 분포 계산
+    const { data: hospitalTypes } = await supabase
+      .from('users')
+      .select('hospital_type')
+      .eq('role', 'doctor')
+      .eq('status', 'approved')
+    
+    const typeDistribution = hospitalTypes?.reduce((acc, hospital) => {
+      const type = hospital.hospital_type || 'clinic'
+      acc[type] = (acc[type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>) || {}
+    
+    const totalTypeCount = Object.values(typeDistribution).reduce((sum, count) => sum + count, 0)
+    
+    const hospitalTypesData = Object.entries(typeDistribution).map(([type, count]) => ({
+      type,
+      count,
+      percentage: totalTypeCount > 0 ? Math.round((count / totalTypeCount) * 100 * 10) / 10 : 0
+    }))
+    
+    // 구독 플랜별 현황
+    const planDistribution = subscriptions.reduce((acc, sub) => {
+      const plan = sub.plan || '1month'
+      if (!acc[plan]) {
+        acc[plan] = { count: 0, revenue: 0 }
+      }
+      acc[plan].count += 1
+      acc[plan].revenue += sub.amount || 0
+      return acc
+    }, {} as Record<string, { count: number; revenue: number }>)
+    
+    const subscriptionPlansData = Object.entries(planDistribution).map(([plan, data]) => ({
+      plan,
+      count: data.count,
+      revenue: data.revenue
+    }))
+    
+    // 최근 활동 추이
+    const recentTrends = activities
+      .slice(-7) // 최근 7일
+      .map(activity => ({
+        date: activity.created_at.split('T')[0],
+        new_hospitals: activities.filter(a => 
+          a.action === 'hospital_approve' && 
+          a.created_at.split('T')[0] === activity.created_at.split('T')[0]
+        ).length,
+        new_users: activities.filter(a => 
+          a.action === 'user_registration' && 
+          a.created_at.split('T')[0] === activity.created_at.split('T')[0]
+        ).length,
+        revenue: subscriptions.filter(s => 
+          s.created_at.split('T')[0] === activity.created_at.split('T')[0]
+        ).reduce((sum, s) => sum + (s.amount || 0), 0)
+      }))
+    
+    // 성장률 계산 (지난 달 대비)
+    const lastMonth = new Date()
+    lastMonth.setMonth(lastMonth.getMonth() - 1)
+    
+    const { count: lastMonthUsers } = await supabase
+      .from('users')
+      .select('id', { count: 'exact' })
+      .lte('created_at', lastMonth.toISOString())
+    
+    const growthRate = lastMonthUsers > 0 
+      ? Math.round(((totalUsers - lastMonthUsers) / lastMonthUsers) * 100 * 10) / 10
+      : 0
+    
+    // 월별 통계 (최근 3개월)
+    const monthlyStats = []
+    for (let i = 2; i >= 0; i--) {
+      const monthDate = new Date()
+      monthDate.setMonth(monthDate.getMonth() - i)
+      const monthStr = monthDate.toISOString().substring(0, 7)
+      
+      const { count: monthHospitals } = await supabase
+        .from('users')
+        .select('id', { count: 'exact' })
+        .eq('role', 'doctor')
+        .eq('status', 'approved')
+        .lte('created_at', new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).toISOString())
+      
+      const { count: monthUsers } = await supabase
+        .from('users')
+        .select('id', { count: 'exact' })
+        .lte('created_at', new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).toISOString())
+      
+      const monthRevenue = subscriptions
+        .filter(s => s.created_at.startsWith(monthStr))
+        .reduce((sum, s) => sum + (s.amount || 0), 0)
+      
+      monthlyStats.push({
+        month: monthStr,
+        hospitals: monthHospitals || 0,
+        users: monthUsers || 0,
+        revenue: monthRevenue
+      })
+    }
+    
     const analyticsData = {
       overview: {
-        total_hospitals: 47,
-        total_users: 1234,
-        monthly_revenue: 7943000,
-        active_sessions: 89,
-        growth_rate: 12.5
+        total_hospitals: totalHospitals,
+        total_users: totalUsers,
+        monthly_revenue: monthlyRevenue,
+        active_sessions: Math.floor(totalUsers * 0.1), // 추정값
+        growth_rate: growthRate
       },
-      monthly_stats: [
-        { month: '2024-01', hospitals: 35, users: 890, revenue: 5915000 },
-        { month: '2024-02', hospitals: 42, users: 1120, revenue: 7098000 },
-        { month: '2024-03', hospitals: 47, users: 1234, revenue: 7943000 }
-      ],
-      hospital_types: [
-        { type: 'clinic', count: 28, percentage: 59.6 },
-        { type: 'korean_medicine', count: 12, percentage: 25.5 },
-        { type: 'hospital', count: 7, percentage: 14.9 }
-      ],
-      subscription_plans: [
-        { plan: '1month', count: 15, revenue: 2535000 },
-        { plan: '6months', count: 20, revenue: 3380000 },
-        { plan: '12months', count: 12, revenue: 2028000 }
-      ],
-      recent_trends: [
-        { date: '2024-01-15', new_hospitals: 2, new_users: 15, revenue: 338000 },
-        { date: '2024-01-16', new_hospitals: 1, new_users: 8, revenue: 169000 },
-        { date: '2024-01-17', new_hospitals: 3, new_users: 22, revenue: 507000 },
-        { date: '2024-01-18', new_hospitals: 0, new_users: 12, revenue: 0 },
-        { date: '2024-01-19', new_hospitals: 1, new_users: 18, revenue: 169000 }
-      ]
+      monthly_stats: monthlyStats,
+      hospital_types: hospitalTypesData,
+      subscription_plans: subscriptionPlansData,
+      recent_trends: recentTrends
     }
     
     return NextResponse.json({
@@ -96,23 +205,9 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('Analytics API 오류:', error)
-    
-    // 오류가 발생해도 기본 더미 데이터 반환
     return NextResponse.json({
-      success: true,
-      data: {
-        overview: {
-          total_hospitals: 47,
-          total_users: 1234,
-          monthly_revenue: 7943000,
-          active_sessions: 89,
-          growth_rate: 12.5
-        },
-        monthly_stats: [],
-        hospital_types: [],
-        subscription_plans: [],
-        recent_trends: []
-      }
-    })
+      success: false,
+      error: error instanceof Error ? error.message : '분석 데이터 조회 중 오류가 발생했습니다'
+    }, { status: 500 })
   }
 }
