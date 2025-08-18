@@ -1,26 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { isSuperAdmin } from '@/lib/config'
+import { createClient } from '@supabase/supabase-js'
+import { isSuperAdmin, getConfig } from '@/lib/config'
+import { cookies } from 'next/headers'
+
+// 서버 사이드 Supabase 클라이언트 생성
+function createServerClient() {
+  const config = getConfig()
+  return createClient(config.supabase.url, config.supabase.anonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
 
 // 관리자 권한 확인 함수
 async function verifyAdminAuth(request: NextRequest) {
   try {
-    // 빌드 시점에는 인증 체크를 건너뛰고 더미 관리자 반환
-    if (process.env.NODE_ENV === 'production' && !request.headers.get('user-agent')?.includes('Mozilla')) {
-      return { id: 'build-admin', email: 'admin@obdoc.com' }
+    // 개발 환경에서는 인증 체크 건너뛰기
+    if (process.env.NODE_ENV === 'development') {
+      return { id: 'dev-admin', email: 'admin@obdoc.com' }
     }
     
-    const { data: { session } } = await supabase.auth.getSession()
+    // 쿠키에서 세션 토큰 가져오기
+    const cookieStore = cookies()
+    const accessToken = cookieStore.get('sb-access-token')?.value
     
-    if (!session?.user) {
+    if (!accessToken) {
       throw new Error('인증이 필요합니다')
     }
     
-    if (!isSuperAdmin(session.user.email)) {
+    const supabase = createServerClient()
+    
+    // 토큰으로 사용자 정보 가져오기
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken)
+    
+    if (error || !user) {
+      throw new Error('인증이 필요합니다')
+    }
+    
+    if (!isSuperAdmin(user.email)) {
       throw new Error('관리자 권한이 필요합니다')
     }
     
-    return session.user
+    return user
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : '권한 확인 중 오류가 발생했습니다')
   }
@@ -32,6 +55,8 @@ export async function GET(request: NextRequest) {
     await verifyAdminAuth(request)
     
     // 병행으로 여러 통계 데이터 조회
+    const supabase = createServerClient()
+    
     const [
       hospitalCountResult,
       userCountResult,

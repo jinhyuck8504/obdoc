@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Users, Search, Trash2, UserCheck, UserX } from 'lucide-react'
+import { X, Users, Search, Trash2, UserCheck, UserX, Shield, CheckCircle, Clock, XCircle } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { Card, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
