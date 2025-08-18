@@ -238,22 +238,28 @@ const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ isOpen, onClose }) => {
                   <CardBody className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">월별 성장 추이</h3>
                     <div className="space-y-4">
-                      {analytics.monthly_stats.map((stat, index) => (
-                        <div key={stat.month} className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm font-medium">{stat.month}</span>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm text-gray-600">
-                              병원 {stat.hospitals}개 | 사용자 {stat.users}명
+                      {analytics.monthly_stats && analytics.monthly_stats.length > 0 ? (
+                        analytics.monthly_stats.map((stat, index) => (
+                          <div key={stat.month} className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm font-medium">{stat.month}</span>
                             </div>
-                            <div className="text-sm font-medium text-green-600">
-                              ₩{(stat.revenue / 1000000).toFixed(1)}M
+                            <div className="text-right">
+                              <div className="text-sm text-gray-600">
+                                병원 {stat.hospitals}개 | 사용자 {stat.users}명
+                              </div>
+                              <div className="text-sm font-medium text-green-600">
+                                ₩{(stat.revenue / 1000000).toFixed(1)}M
+                              </div>
                             </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-500">월별 통계 데이터가 없습니다.</p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </CardBody>
                 </Card>
@@ -263,18 +269,28 @@ const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ isOpen, onClose }) => {
                   <CardBody className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">병원 유형별 분포</h3>
                     <div className="space-y-4">
-                      {analytics.hospital_types.map((type) => (
-                        <div key={type.type} className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <Building className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm font-medium">{type.type}</span>
+                      {analytics.hospital_types && analytics.hospital_types.length > 0 ? (
+                        analytics.hospital_types.map((type) => (
+                          <div key={type.type} className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Building className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm font-medium">
+                                {type.type === 'clinic' ? '일반의원' :
+                                 type.type === 'korean_medicine' ? '한의원' :
+                                 type.type === 'hospital' ? '종합병원' : type.type}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-medium">{type.count}개</div>
+                              <div className="text-xs text-gray-500">{type.percentage}%</div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium">{type.count}개</div>
-                            <div className="text-xs text-gray-500">{type.percentage}%</div>
-                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-500">병원 유형 데이터가 없습니다.</p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </CardBody>
                 </Card>
@@ -284,18 +300,28 @@ const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ isOpen, onClose }) => {
                   <CardBody className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">구독 플랜별 현황</h3>
                     <div className="space-y-4">
-                      {analytics.subscription_plans.map((plan) => (
-                        <div key={plan.plan} className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <DollarSign className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm font-medium">{plan.plan} 플랜</span>
+                      {analytics.subscription_plans && analytics.subscription_plans.length > 0 ? (
+                        analytics.subscription_plans.map((plan) => (
+                          <div key={plan.plan} className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <DollarSign className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm font-medium">
+                                {plan.plan === '1month' ? '1개월' :
+                                 plan.plan === '6months' ? '6개월' :
+                                 plan.plan === '12months' ? '12개월' : plan.plan} 플랜
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-medium">{plan.count}개</div>
+                              <div className="text-xs text-green-600">₩{plan.revenue.toLocaleString()}</div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium">{plan.count}개</div>
-                            <div className="text-xs text-green-600">₩{plan.revenue.toLocaleString()}</div>
-                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-500">구독 플랜 데이터가 없습니다.</p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </CardBody>
                 </Card>
@@ -305,24 +331,30 @@ const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ isOpen, onClose }) => {
                   <CardBody className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 활동 추이</h3>
                     <div className="space-y-4">
-                      {analytics.recent_trends.map((trend) => (
-                        <div key={trend.date} className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <Activity className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm font-medium">
-                              {new Date(trend.date).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-xs text-gray-600">
-                              병원 +{trend.new_hospitals} | 사용자 +{trend.new_users}
+                      {analytics.recent_trends && analytics.recent_trends.length > 0 ? (
+                        analytics.recent_trends.map((trend) => (
+                          <div key={trend.date} className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Activity className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm font-medium">
+                                {new Date(trend.date).toLocaleDateString()}
+                              </span>
                             </div>
-                            <div className="text-xs text-green-600">
-                              ₩{trend.revenue.toLocaleString()}
+                            <div className="text-right">
+                              <div className="text-xs text-gray-600">
+                                병원 +{trend.new_hospitals} | 사용자 +{trend.new_users}
+                              </div>
+                              <div className="text-xs text-green-600">
+                                ₩{trend.revenue.toLocaleString()}
+                              </div>
                             </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-500">최근 활동 데이터가 없습니다.</p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </CardBody>
                 </Card>
