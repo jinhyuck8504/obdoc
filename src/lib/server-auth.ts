@@ -1,5 +1,4 @@
 import { NextRequest } from 'next/server'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
 import { getConfig } from './config'
@@ -19,24 +18,41 @@ export function createServerClient() {
   )
 }
 
-// Next.js 13+ App Router용 인증 클라이언트
+// 쿠키 기반 인증용 클라이언트
 export function createAuthClient() {
-  return createServerComponentClient({ cookies })
+  const config = getConfig()
+  return createClient(
+    config.supabase.url,
+    config.supabase.anonKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  )
 }
 
 // 관리자 권한 확인
 export async function verifyAdminAuth(request?: NextRequest) {
   try {
-    const supabase = createAuthClient()
-    
-    // 현재 세션 가져오기
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    
-    if (sessionError || !session?.user) {
+    // 쿠키에서 세션 토큰 가져오기
+    const cookieStore = cookies()
+    const accessToken = cookieStore.get('sb-access-token')?.value || 
+                       cookieStore.get('supabase-auth-token')?.value
+
+    if (!accessToken) {
       throw new Error('인증이 필요합니다')
     }
 
-    const user = session.user
+    const supabase = createServerClient()
+    
+    // 토큰으로 사용자 정보 가져오기
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken)
+    
+    if (error || !user) {
+      throw new Error('인증이 필요합니다')
+    }
     
     // 관리자 권한 확인
     const config = getConfig()
@@ -44,8 +60,7 @@ export async function verifyAdminAuth(request?: NextRequest) {
     
     if (!isSuperAdmin) {
       // 데이터베이스에서 관리자 역할 확인
-      const serverClient = createServerClient()
-      const { data: userProfile, error: profileError } = await serverClient
+      const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .select('role')
         .eq('id', user.id)
@@ -90,9 +105,16 @@ export async function verifyApiAuth(request: NextRequest) {
 // 쿠키 기반 인증 (브라우저용)
 export async function verifyCookieAuth() {
   try {
-    const supabase = createAuthClient()
-    
-    const { data: { user }, error } = await supabase.auth.getUser()
+    const cookieStore = cookies()
+    const accessToken = cookieStore.get('sb-access-token')?.value || 
+                       cookieStore.get('supabase-auth-token')?.value
+
+    if (!accessToken) {
+      throw new Error('로그인이 필요합니다')
+    }
+
+    const supabase = createServerClient()
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken)
     
     if (error || !user) {
       throw new Error('로그인이 필요합니다')
